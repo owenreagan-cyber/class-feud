@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInitialState, gameReducer } from './gameReducer';
-import { loadPersistedState, savePersistedState, STORAGE_KEY } from './gamePersistence';
+import { getCurrentRound } from './gameSelectors';
+import { loadPersistedState, PERSIST_VERSION, savePersistedState, STORAGE_KEY } from './gamePersistence';
 
 function makeStorage(): Storage {
   const store = new Map<string, string>();
@@ -23,22 +24,35 @@ afterEach(() => {
 });
 
 type MutableAnswer = {
-  points: unknown;
+  points: number;
   revealed: unknown;
   aliases: unknown;
 };
 
-type MutableState = {
-  rounds: Array<{ answers: MutableAnswer[]; multiplier: unknown }>;
-  currentRoundIndex: unknown;
-  strikes: unknown;
+type MutableRound = {
+  id: string;
+  title: unknown;
+  multiplier: number;
+  answers: MutableAnswer[];
 };
 
-/** Serialize an initial state, corrupted by the given mutation, as a version-2 envelope. */
+type MutableState = {
+  teams: Array<{ id: string; name: string; color: string; score: number }>;
+  rounds: MutableRound[];
+  roundLibrary: MutableRound[];
+  currentRoundIndex: number;
+  strikes: number;
+  roundPot: number;
+  activeTeamId: unknown;
+  stealTeamId: unknown;
+  roundWinnerId: unknown;
+};
+
+/** Serialize an initial state, corrupted by the given mutation, as a current-version envelope. */
 function corrupt(mutate: (state: MutableState) => void): string {
   const state = createInitialState() as unknown as MutableState;
   mutate(state);
-  return JSON.stringify({ version: 2, state });
+  return JSON.stringify({ version: PERSIST_VERSION, state });
 }
 
 function storedRaw(storage: Storage, raw: string): void {
@@ -70,18 +84,17 @@ describe('game persistence', () => {
   });
 
   it('returns null for the legacy version-1 schema', () => {
-    storedRaw(
-      makeStorage(),
-      JSON.stringify({ version: 1, state: createInitialState() }),
-    );
+    storedRaw(makeStorage(), JSON.stringify({ version: 1, state: createInitialState() }));
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('returns null for the legacy version-2 schema', () => {
+    storedRaw(makeStorage(), JSON.stringify({ version: 2, state: createInitialState() }));
     expect(loadPersistedState()).toBeNull();
   });
 
   it('returns null for a structurally invalid state', () => {
-    storedRaw(
-      makeStorage(),
-      JSON.stringify({ version: 2, state: { phase: 'nonsense' } }),
-    );
+    storedRaw(makeStorage(), JSON.stringify({ version: PERSIST_VERSION, state: { phase: 'nonsense' } }));
     expect(loadPersistedState()).toBeNull();
   });
 
@@ -115,11 +128,21 @@ describe('game persistence', () => {
     expect(loadPersistedState()).toBeNull();
   });
 
-  it('rejects a non-positive round multiplier', () => {
+  it('rejects an invalid (non 1/2/3) multiplier', () => {
     storedRaw(
       makeStorage(),
       corrupt((state) => {
-        state.rounds[0].multiplier = 0;
+        state.rounds[0].multiplier = 4;
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects a missing round title', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.rounds[0].title = null;
       }),
     );
     expect(loadPersistedState()).toBeNull();
@@ -143,6 +166,90 @@ describe('game persistence', () => {
       }),
     );
     expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects an invalid active-team reference', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.activeTeamId = 'nope';
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects an invalid steal-team reference', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.stealTeamId = 'nope';
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects an invalid round-winner reference', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.roundWinnerId = 'nope';
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects a malformed round reference (id not in library)', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.rounds[0].id = 'not-in-library';
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects a missing round library', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.roundLibrary = [];
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('setup configuration survives a reload', () => {
+    vi.stubGlobal('localStorage', makeStorage());
+    let state = createInitialState();
+    state = gameReducer(state, { type: 'ADD_TEAM' }); // 3 teams
+    state = gameReducer(state, { type: 'RENAME_TEAM', teamId: 'team-red', name: 'Lions' });
+    state = gameReducer(state, { type: 'SET_ROUND_MULTIPLIER', roundId: 'round-1', multiplier: 2 });
+    const ids = state.rounds.map((round) => round.id);
+    const reordered = [ids[2], ids[0], ids[1], ids[3]];
+    state = gameReducer(state, { type: 'REORDER_ROUNDS', roundIds: reordered });
+    savePersistedState(state);
+
+    const restored = loadPersistedState()!;
+    expect(restored.phase).toBe('setup');
+    expect(restored.teams.map((team) => team.id)).toEqual(state.teams.map((team) => team.id));
+    expect(restored.teams.find((team) => team.id === 'team-red')?.name).toBe('Lions');
+    expect(restored.rounds.map((round) => round.id)).toEqual(reordered);
+    expect(restored.rounds.find((round) => round.id === 'round-1')?.multiplier).toBe(2);
+  });
+
+  it('an active multi-round game survives a reload', () => {
+    vi.stubGlobal('localStorage', makeStorage());
+    let state = createInitialState();
+    state = gameReducer(state, { type: 'START_GAME' });
+    state = gameReducer(state, { type: 'SET_ACTIVE_TEAM', teamId: 'team-red' });
+    state = gameReducer(state, { type: 'REVEAL_ANSWER', answerId: 'water' });
+    savePersistedState(state);
+
+    const restored = loadPersistedState()!;
+    expect(restored.phase).toBe('playing');
+    expect(restored.roundPot).toBe(35);
+    expect(restored.activeTeamId).toBe('team-red');
+    expect(getCurrentRound(restored).answers.find((a) => a.id === 'water')?.revealed).toBe(true);
   });
 
   it('reset overwrites a persisted active game with the initial state', () => {

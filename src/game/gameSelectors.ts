@@ -25,18 +25,14 @@ export function getStealTeam(state: GameState): Team | null {
   return getTeamById(state, state.stealTeamId) ?? null;
 }
 
+/** The team that received the most recently resolved round award. */
+export function getRoundWinner(state: GameState): Team | null {
+  return getTeamById(state, state.roundWinnerId) ?? null;
+}
+
 /** Teams eligible to attempt a steal (everyone except the controlling team). */
 export function getEligibleStealTeams(state: GameState): Team[] {
   return state.teams.filter((team) => team.id !== state.activeTeamId);
-}
-
-/** The next team in rotation after the active team (used for possession switching). */
-export function getNextTeam(state: GameState): Team | null {
-  const teams = state.teams;
-  if (teams.length === 0) return null;
-  const index = teams.findIndex((team) => team.id === state.activeTeamId);
-  if (index === -1) return teams[0];
-  return teams[(index + 1) % teams.length];
 }
 
 export function getRevealedCount(state: GameState): number {
@@ -53,8 +49,21 @@ export function getRoundValue(state: GameState): number {
   return state.roundPot * getCurrentRound(state).multiplier;
 }
 
-/** The team with the highest permanent score (ties resolve to the first). */
+/**
+ * Teams tied for the highest permanent score. Empty when no tie exists
+ * (including the single-team case). Deterministic: preserves team order.
+ */
+export function getTiedTeams(state: GameState): Team[] {
+  const teams = state.teams;
+  if (teams.length < 2) return [];
+  const maxScore = Math.max(...teams.map((team) => team.score));
+  const tied = teams.filter((team) => team.score === maxScore);
+  return tied.length > 1 ? tied : [];
+}
+
+/** The single highest-scoring team, or null when tied or no teams exist. */
 export function getWinner(state: GameState): Team | null {
+  if (getTiedTeams(state).length > 0) return null;
   if (state.teams.length === 0) return null;
   return state.teams.reduce((best, team) => (team.score > best.score ? team : best));
 }

@@ -1,6 +1,6 @@
 import type { Dispatch } from 'react';
-import GameBoard from '../components/board/GameBoard';
-import TeacherConsole from '../components/teacher/TeacherConsole';
+import PresenterGameView from '../components/presenter/PresenterGameView';
+import TeacherGameView from '../components/teacher/TeacherGameView';
 import type { GameAction, GameState } from '../game/gameTypes';
 
 type Props = {
@@ -12,8 +12,8 @@ type Props = {
 export default function GameScreen({ state, dispatch, canUndo }: Props) {
   return (
     <div className="game-screen">
-      <GameBoard state={state} />
-      <TeacherConsole state={state} dispatch={dispatch} canUndo={canUndo} />
+      <PresenterGameView state={state} />
+      <TeacherGameView state={state} dispatch={dispatch} canUndo={canUndo} />
     </div>
   );
 }

@@ -228,10 +228,11 @@ describe('round progression', () => {
 
   it('ends the game after the last round', () => {
     let state = startPlaying('team-red');
-    // Play through all three rounds.
-    for (let index = 0; index < 3; index += 1) {
+    const roundCount = state.rounds.length;
+    // Play through every configured round.
+    for (let index = 0; index < roundCount; index += 1) {
       state = gameReducer(state, { type: 'AWARD_ROUND' });
-      if (index < 2) {
+      if (index < roundCount - 1) {
         state = gameReducer(state, { type: 'NEXT_ROUND' });
         state = gameReducer(state, { type: 'SET_ACTIVE_TEAM', teamId: 'team-red' });
       }
