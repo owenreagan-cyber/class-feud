@@ -1,0 +1,376 @@
+/* ---------- Setup screen ---------- */
+
+.setup-screen {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.setup-title {
+  font-size: 56px;
+}
+
+.setup-subtitle {
+  color: var(--muted);
+  margin: 0;
+}
+
+.team-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.team-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.team-number {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.team-setup-row input {
+  flex: 1;
+}
+
+/* ---------- Game screen ---------- */
+
+.game-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  padding: 16px;
+  min-height: 100svh;
+}
+
+@media (max-width: 980px) {
+  .game-screen {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Game board (projector view) ---------- */
+
+.game-board {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  align-self: start;
+}
+
+.board-top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.board-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.round-pot,
+.strikes-block {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.meta-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.phase-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #1a1500;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+
+.board-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category {
+  color: var(--muted);
+  font-size: 20px;
+  margin: 0;
+}
+
+.prompt {
+  font-size: clamp(30px, 4.5vw, 56px);
+  line-height: 1.1;
+}
+
+.control-line {
+  font-size: 22px;
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ---------- Scoreboard ---------- */
+
+.scoreboard {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.team-card {
+  flex: 1 1 200px;
+  min-width: 180px;
+  border: 3px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--panel-2);
+  position: relative;
+}
+
+.team-card--active {
+  box-shadow: 0 0 0 3px var(--text);
+}
+
+.team-name {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.team-score {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.control-tag {
+  position: absolute;
+  top: -13px;
+  right: 12px;
+  color: #0b0f1d;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ---------- Strikes ---------- */
+
+.strikes {
+  display: flex;
+  gap: 8px;
+}
+
+.strike {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.strike--on {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
+/* ---------- Answer board ---------- */
+
+.answer-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.answer-card-scene {
+  perspective: 900px;
+  height: 170px;
+}
+
+.answer-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.answer-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 14px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.answer-face--front {
+  background: linear-gradient(160deg, #23305c, #1a2340);
+  border: 2px solid var(--border);
+  color: var(--accent);
+}
+
+.answer-face--back {
+  background: var(--accent);
+  color: #1a1500;
+  transform: rotateY(180deg);
+}
+
+.answer-points-only {
+  font-size: 44px;
+  font-weight: 800;
+}
+
+.answer-text {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.answer-points {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ---------- Teacher console ---------- */
+
+.teacher-console {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
+  position: sticky;
+  top: 16px;
+}
+
+.console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-header h2 {
+  font-size: 22px;
+}
+
+.console-phase {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.console-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.console-summary strong {
+  color: var(--text);
+}
+
+.console-section {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.console-section h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.console-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.answer-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+button.revealed {
+  opacity: 0.6;
+}
+
+.console-hint {
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.console-footer {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.console-footer button {
+  flex: 1;
+}
