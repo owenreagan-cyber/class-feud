@@ -2,10 +2,13 @@ import type { Dispatch, ReactNode } from 'react';
 import {
   getActiveTeam,
   getAllRevealed,
+  getCurrentRound,
+  getEligibleStealTeams,
   getNextTeam,
   getRevealedCount,
   getRoundValue,
   getStealTeam,
+  getWinner,
 } from '../../game/gameSelectors';
 import { MAX_STRIKES, PHASE_LABELS } from '../../game/gameTypes';
 import type { GameAction, GameState } from '../../game/gameTypes';
@@ -30,10 +33,13 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
   const activeTeam = getActiveTeam(state);
   const stealTeam = getStealTeam(state);
   const nextTeam = getNextTeam(state);
+  const eligibleStealTeams = getEligibleStealTeams(state);
+  const currentRound = getCurrentRound(state);
   const roundValue = getRoundValue(state);
   const revealedCount = getRevealedCount(state);
-  const answerCount = state.currentRound.answers.length;
+  const answerCount = currentRound.answers.length;
   const allRevealed = getAllRevealed(state);
+  const roundLabel = `Round ${state.currentRoundIndex + 1} / ${state.rounds.length}`;
 
   return (
     <aside className="teacher-console">
@@ -43,6 +49,7 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
       </div>
 
       <div className="console-summary">
+        <span>{roundLabel}</span>
         {activeTeam && (
           <span>
             Control: <strong>{activeTeam.name}</strong>
@@ -85,7 +92,7 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
             </div>
           )}
           <div className="answer-buttons">
-            {state.currentRound.answers.map((answer) => (
+            {currentRound.answers.map((answer) => (
               <button
                 key={answer.id}
                 className={answer.revealed ? 'revealed' : ''}
@@ -131,18 +138,34 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
 
       {phase === 'steal' && (
         <ConsoleSection title="Resolve steal">
-          <button
-            className="success"
-            onClick={() => dispatch({ type: 'RESOLVE_STEAL', success: true })}
-          >
-            Correct — {stealTeam?.name ?? 'Steal team'} +{roundValue}
-          </button>
-          <button
-            className="danger"
-            onClick={() => dispatch({ type: 'RESOLVE_STEAL', success: false })}
-          >
-            Incorrect — {activeTeam?.name ?? 'Controlling team'} +{roundValue}
-          </button>
+          {stealTeam === null && (
+            <div className="console-hint">Choose the stealing team:</div>
+          )}
+          {stealTeam === null ? (
+            eligibleStealTeams.map((team) => (
+              <button
+                key={team.id}
+                onClick={() => dispatch({ type: 'SET_STEAL_TEAM', teamId: team.id })}
+              >
+                {team.name} steals
+              </button>
+            ))
+          ) : (
+            <>
+              <button
+                className="success"
+                onClick={() => dispatch({ type: 'RESOLVE_STEAL', success: true })}
+              >
+                Correct — {stealTeam.name} +{roundValue}
+              </button>
+              <button
+                className="danger"
+                onClick={() => dispatch({ type: 'RESOLVE_STEAL', success: false })}
+              >
+                Incorrect — {activeTeam?.name ?? 'Controlling team'} +{roundValue}
+              </button>
+            </>
+          )}
         </ConsoleSection>
       )}
 
@@ -154,11 +177,9 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
           >
             Award Round — {activeTeam?.name ?? 'Active team'} +{roundValue}
           </button>
-          {nextTeam && (
-            <button onClick={() => dispatch({ type: 'START_STEAL' })}>
-              Force Steal ({nextTeam.name} steals)
-            </button>
-          )}
+          <button onClick={() => dispatch({ type: 'START_STEAL' })}>
+            Force Steal
+          </button>
         </ConsoleSection>
       )}
 
@@ -166,7 +187,7 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
         <ConsoleSection title="Round over">
           <button
             className="primary"
-            onClick={() => dispatch({ type: 'START_ROUND' })}
+            onClick={() => dispatch({ type: 'NEXT_ROUND' })}
           >
             Next Round
           </button>
@@ -176,9 +197,12 @@ export default function TeacherConsole({ state, dispatch, canUndo }: Props) {
 
       {phase === 'gameOver' && (
         <ConsoleSection title="Game over">
+          {getWinner(state) && (
+            <div className="console-hint">Winner: {getWinner(state)?.name}</div>
+          )}
           <button
             className="primary"
-            onClick={() => dispatch({ type: 'START_ROUND' })}
+            onClick={() => dispatch({ type: 'START_GAME' })}
           >
             Play Again
           </button>

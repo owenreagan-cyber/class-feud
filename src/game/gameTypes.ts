@@ -40,16 +40,19 @@ export type GameState = {
   stealTeamId: TeamId | null;
   strikes: number;
   roundPot: number;
-  currentRound: FeudRound;
+  rounds: FeudRound[];
+  currentRoundIndex: number;
 };
 
 export type GameAction =
-  | { type: 'START_ROUND' }
+  | { type: 'START_GAME' }
+  | { type: 'NEXT_ROUND' }
   | { type: 'SET_ACTIVE_TEAM'; teamId: TeamId }
   | { type: 'REVEAL_ANSWER'; answerId: string }
   | { type: 'ADD_STRIKE' }
   | { type: 'REMOVE_STRIKE' }
   | { type: 'START_STEAL' }
+  | { type: 'SET_STEAL_TEAM'; teamId: TeamId }
   | { type: 'RESOLVE_STEAL'; success: boolean }
   | { type: 'AWARD_ROUND'; teamId?: TeamId }
   | { type: 'END_GAME' }

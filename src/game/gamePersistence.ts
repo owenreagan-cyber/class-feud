@@ -1,8 +1,9 @@
-import type { GamePhase, GameState } from './gameTypes';
+import { MAX_STRIKES } from './gameTypes';
+import type { FeudAnswer, FeudRound, GamePhase, GameState } from './gameTypes';
 
-export const STORAGE_KEY = 'class-feud.game-state.v1';
+export const STORAGE_KEY = 'class-feud.game-state';
 
-const PERSIST_VERSION = 1;
+const PERSIST_VERSION = 2;
 
 const VALID_PHASES: GamePhase[] = [
   'setup',
@@ -22,49 +23,79 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function isNonNegativeNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return isNonNegativeNumber(value) && Number.isInteger(value);
+}
+
 function isValidTeam(value: unknown): boolean {
   if (!isRecord(value)) return false;
   return (
     typeof value.id === 'string' &&
     typeof value.name === 'string' &&
     typeof value.color === 'string' &&
-    typeof value.score === 'number'
+    isNonNegativeNumber(value.score)
   );
 }
 
-function isValidAnswer(value: unknown): boolean {
+function isValidAnswer(value: unknown): value is FeudAnswer {
   if (!isRecord(value)) return false;
   return (
     typeof value.id === 'string' &&
     typeof value.text === 'string' &&
     Array.isArray(value.aliases) &&
     value.aliases.every((alias) => typeof alias === 'string') &&
-    typeof value.points === 'number' &&
+    isNonNegativeNumber(value.points) &&
     typeof value.revealed === 'boolean'
+  );
+}
+
+function isValidRound(value: unknown): value is FeudRound {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.prompt === 'string' &&
+    typeof value.category === 'string' &&
+    typeof value.multiplier === 'number' &&
+    Number.isFinite(value.multiplier) &&
+    value.multiplier > 0 &&
+    Array.isArray(value.answers) &&
+    value.answers.length > 0 &&
+    value.answers.every(isValidAnswer)
   );
 }
 
 function isValidGameState(value: unknown): value is GameState {
   if (!isRecord(value)) return false;
-  if (!VALID_PHASES.includes(value.phase as GamePhase)) return false;
-  if (!Array.isArray(value.teams) || !value.teams.every(isValidTeam)) return false;
-  if (typeof value.strikes !== 'number') return false;
-  if (typeof value.roundPot !== 'number') return false;
-  if (value.activeTeamId !== null && typeof value.activeTeamId !== 'string') return false;
-  if (value.stealTeamId !== null && typeof value.stealTeamId !== 'string') return false;
 
-  const round = value.currentRound;
-  if (!isRecord(round)) return false;
-  if (
-    typeof round.id !== 'string' ||
-    typeof round.prompt !== 'string' ||
-    typeof round.category !== 'string' ||
-    typeof round.multiplier !== 'number' ||
-    !Array.isArray(round.answers) ||
-    !round.answers.every(isValidAnswer)
-  ) {
-    return false;
-  }
+  const phase = value.phase;
+  if (!VALID_PHASES.includes(phase as GamePhase)) return false;
+
+  const teams = value.teams;
+  if (!Array.isArray(teams) || teams.length === 0 || !teams.every(isValidTeam)) return false;
+
+  const strikes = value.strikes;
+  if (!isNonNegativeInteger(strikes) || strikes > MAX_STRIKES) return false;
+
+  const roundPot = value.roundPot;
+  if (!isNonNegativeNumber(roundPot)) return false;
+
+  const activeTeamId = value.activeTeamId;
+  if (activeTeamId !== null && typeof activeTeamId !== 'string') return false;
+
+  const stealTeamId = value.stealTeamId;
+  if (stealTeamId !== null && typeof stealTeamId !== 'string') return false;
+
+  const rounds = value.rounds;
+  if (!Array.isArray(rounds) || rounds.length === 0 || !rounds.every(isValidRound)) return false;
+
+  const currentRoundIndex = value.currentRoundIndex;
+  if (!isNonNegativeInteger(currentRoundIndex)) return false;
+  if (currentRoundIndex >= rounds.length) return false;
+
   return true;
 }
 
@@ -101,15 +132,5 @@ export function loadPersistedState(): GameState | null {
     return parsed.state;
   } catch {
     return null;
-  }
-}
-
-export function clearPersistedState(): void {
-  const storage = getStorage();
-  if (!storage) return;
-  try {
-    storage.removeItem(STORAGE_KEY);
-  } catch {
-    // Ignore.
   }
 }

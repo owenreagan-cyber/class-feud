@@ -1,5 +1,5 @@
-import { getNextTeamId, getRoundValue } from './gameSelectors';
-import { DEFAULT_TEAMS, SAMPLE_ROUND } from './sampleData';
+import { getCurrentRound, getEligibleStealTeams, getRoundValue } from './gameSelectors';
+import { DEFAULT_TEAMS, SAMPLE_ROUNDS } from './sampleData';
 import { MAX_STRIKES } from './gameTypes';
 import type { FeudRound, GameAction, GameState, TeamId } from './gameTypes';
 
@@ -19,7 +19,8 @@ export function createInitialState(): GameState {
     stealTeamId: null,
     strikes: 0,
     roundPot: 0,
-    currentRound: cloneRound(SAMPLE_ROUND),
+    rounds: SAMPLE_ROUNDS.map(cloneRound),
+    currentRoundIndex: 0,
   };
 }
 
@@ -36,7 +37,8 @@ function awardRound(state: GameState, teamId: TeamId | null, value: number): Gam
   };
 }
 
-function startRound(state: GameState): GameState {
+/** Reset per-round state for a fresh toss-up on the current round index. */
+function resetRound(state: GameState): GameState {
   return {
     ...state,
     phase: 'tossup',
@@ -44,8 +46,20 @@ function startRound(state: GameState): GameState {
     stealTeamId: null,
     strikes: 0,
     roundPot: 0,
-    currentRound: cloneRound(state.currentRound),
+    rounds: state.rounds.map((round, index) =>
+      index === state.currentRoundIndex ? cloneRound(round) : round,
+    ),
   };
+}
+
+/**
+ * Enter the steal phase. Auto-select the opponent only when there is exactly
+ * one eligible team (a two-team match); otherwise the teacher must choose.
+ */
+function enterSteal(state: GameState): GameState {
+  const eligible = getEligibleStealTeams(state);
+  const stealTeamId = eligible.length === 1 ? eligible[0].id : null;
+  return { ...state, phase: 'steal', stealTeamId };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -58,18 +72,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return createInitialState();
 
     case 'UPDATE_TEAMS':
+      // Team structure is locked once the game has started.
       if (state.phase !== 'setup') return state;
       return { ...state, teams: action.teams };
 
-    case 'START_ROUND':
-      if (
-        state.phase !== 'setup' &&
-        state.phase !== 'roundOver' &&
-        state.phase !== 'gameOver'
-      ) {
-        return state;
+    case 'START_GAME':
+      if (state.phase !== 'setup' && state.phase !== 'gameOver') return state;
+      return resetRound({
+        ...state,
+        currentRoundIndex: 0,
+        teams: state.teams.map((team) => ({ ...team, score: 0 })),
+      });
+
+    case 'NEXT_ROUND': {
+      if (state.phase !== 'roundOver') return state;
+      if (state.currentRoundIndex + 1 >= state.rounds.length) {
+        return { ...state, phase: 'gameOver', stealTeamId: null };
       }
-      return startRound(state);
+      return resetRound({ ...state, currentRoundIndex: state.currentRoundIndex + 1 });
+    }
 
     case 'SET_ACTIVE_TEAM': {
       if (state.phase !== 'tossup' && state.phase !== 'playing') return state;
@@ -83,15 +104,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'REVEAL_ANSWER': {
       if (state.phase !== 'playing') return state;
-      const answer = state.currentRound.answers.find((a) => a.id === action.answerId);
+      const round = getCurrentRound(state);
+      const answer = round.answers.find((a) => a.id === action.answerId);
       if (!answer || answer.revealed) return state;
-      const answers = state.currentRound.answers.map((a) =>
+      const answers = round.answers.map((a) =>
         a.id === action.answerId ? { ...a, revealed: true } : a,
       );
       return {
         ...state,
         roundPot: state.roundPot + answer.points,
-        currentRound: { ...state.currentRound, answers },
+        rounds: state.rounds.map((r, index) =>
+          index === state.currentRoundIndex ? { ...r, answers } : r,
+        ),
       };
     }
 
@@ -99,12 +123,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== 'playing' || state.strikes >= MAX_STRIKES) return state;
       const strikes = state.strikes + 1;
       if (strikes >= MAX_STRIKES) {
-        return {
-          ...state,
-          strikes,
-          phase: 'steal',
-          stealTeamId: getNextTeamId(state),
-        };
+        return enterSteal({ ...state, strikes });
       }
       return { ...state, strikes };
     }
@@ -124,15 +143,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'START_STEAL': {
       if (state.phase !== 'playing') return state;
-      return {
-        ...state,
-        phase: 'steal',
-        stealTeamId: getNextTeamId(state),
-      };
+      return enterSteal(state);
+    }
+
+    case 'SET_STEAL_TEAM': {
+      if (state.phase !== 'steal') return state;
+      if (action.teamId === state.activeTeamId) return state;
+      if (!state.teams.some((team) => team.id === action.teamId)) return state;
+      return { ...state, stealTeamId: action.teamId };
     }
 
     case 'RESOLVE_STEAL': {
       if (state.phase !== 'steal') return state;
+      if (state.stealTeamId === null || state.activeTeamId === null) return state;
       const winnerId = action.success ? state.stealTeamId : state.activeTeamId;
       return awardRound(state, winnerId, getRoundValue(state));
     }

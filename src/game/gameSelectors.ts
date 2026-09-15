@@ -1,4 +1,16 @@
-import type { GameState, Team, TeamId } from './gameTypes';
+import type { FeudRound, GameState, Team, TeamId } from './gameTypes';
+
+export function getCurrentRound(state: GameState): FeudRound {
+  return state.rounds[state.currentRoundIndex] ?? state.rounds[0];
+}
+
+export function getNextRound(state: GameState): FeudRound | null {
+  return state.rounds[state.currentRoundIndex + 1] ?? null;
+}
+
+export function hasNextRound(state: GameState): boolean {
+  return state.currentRoundIndex + 1 < state.rounds.length;
+}
 
 export function getTeamById(state: GameState, teamId: TeamId | null): Team | undefined {
   if (teamId === null) return undefined;
@@ -13,7 +25,12 @@ export function getStealTeam(state: GameState): Team | null {
   return getTeamById(state, state.stealTeamId) ?? null;
 }
 
-/** The team that would receive a steal attempt next (rotates after the active team). */
+/** Teams eligible to attempt a steal (everyone except the controlling team). */
+export function getEligibleStealTeams(state: GameState): Team[] {
+  return state.teams.filter((team) => team.id !== state.activeTeamId);
+}
+
+/** The next team in rotation after the active team (used for possession switching). */
 export function getNextTeam(state: GameState): Team | null {
   const teams = state.teams;
   if (teams.length === 0) return null;
@@ -22,22 +39,22 @@ export function getNextTeam(state: GameState): Team | null {
   return teams[(index + 1) % teams.length];
 }
 
-export function getNextTeamId(state: GameState): TeamId | null {
-  return getNextTeam(state)?.id ?? null;
-}
-
 export function getRevealedCount(state: GameState): number {
-  return state.currentRound.answers.filter((answer) => answer.revealed).length;
+  return getCurrentRound(state).answers.filter((answer) => answer.revealed).length;
 }
 
 export function getAllRevealed(state: GameState): boolean {
-  return (
-    state.currentRound.answers.length > 0 &&
-    state.currentRound.answers.every((answer) => answer.revealed)
-  );
+  const answers = getCurrentRound(state).answers;
+  return answers.length > 0 && answers.every((answer) => answer.revealed);
 }
 
-/** Permanent points a team would receive for the current round pot (single source of truth). */
+/** Permanent points a team receives for the current round pot (single source of truth). */
 export function getRoundValue(state: GameState): number {
-  return state.roundPot * state.currentRound.multiplier;
+  return state.roundPot * getCurrentRound(state).multiplier;
+}
+
+/** The team with the highest permanent score (ties resolve to the first). */
+export function getWinner(state: GameState): Team | null {
+  if (state.teams.length === 0) return null;
+  return state.teams.reduce((best, team) => (team.score > best.score ? team : best));
 }

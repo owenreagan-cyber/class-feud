@@ -119,6 +119,22 @@
   border-radius: 999px;
 }
 
+.round-badge {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.multiplier-badge {
+  background: var(--accent);
+  color: #1a1500;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
 .board-main {
   display: flex;
   flex-direction: column;

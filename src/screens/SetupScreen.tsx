@@ -34,7 +34,7 @@ export default function SetupScreen({ state, dispatch }: Props) {
       <button
         type="button"
         className="primary"
-        onClick={() => dispatch({ type: 'START_ROUND' })}
+        onClick={() => dispatch({ type: 'START_GAME' })}
       >
         Start Game
       </button>
