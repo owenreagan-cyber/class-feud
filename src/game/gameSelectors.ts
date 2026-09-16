@@ -1,4 +1,9 @@
 import type { FeudRound, GameState, Team, TeamId } from './gameTypes';
+import type {
+  BrainBlitzConfig,
+  BrainBlitzQuestion,
+  BrainBlitzResponse,
+} from './brainBlitzTypes';
 
 export function getCurrentRound(state: GameState): FeudRound {
   return state.rounds[state.currentRoundIndex] ?? state.rounds[0];
@@ -66,4 +71,69 @@ export function getWinner(state: GameState): Team | null {
   if (getTiedTeams(state).length > 0) return null;
   if (state.teams.length === 0) return null;
   return state.teams.reduce((best, team) => (team.score > best.score ? team : best));
+}
+
+// ---------------------------------------------------------------- Brain Blitz --
+
+export function getBrainBlitzConfig(state: GameState): BrainBlitzConfig | null {
+  return state.brainBlitzConfig;
+}
+
+/** The ordered Brain Blitz questions, or an empty list when unavailable. */
+export function getBrainBlitzQuestions(state: GameState): BrainBlitzQuestion[] {
+  return state.brainBlitzConfig?.questions ?? [];
+}
+
+/** The current Brain Blitz question, or null when not in a live round. */
+export function getBrainBlitzCurrentQuestion(state: GameState): BrainBlitzQuestion | null {
+  const blitz = state.brainBlitz;
+  if (!blitz) return null;
+  return state.brainBlitzConfig?.questions[blitz.currentQuestionIndex] ?? null;
+}
+
+/** Responses for the current player (player 1 or 2). */
+export function getBrainBlitzPlayerResponses(state: GameState): BrainBlitzResponse[] {
+  const blitz = state.brainBlitz;
+  if (!blitz) return [];
+  return blitz.currentPlayer === 1 ? blitz.player1Responses : blitz.player2Responses;
+}
+
+/** Combined Brain Blitz score (player 1 + player 2). */
+export function getBrainBlitzTotalScore(state: GameState): number {
+  const blitz = state.brainBlitz;
+  if (!blitz) return 0;
+  return blitz.player1Score + blitz.player2Score;
+}
+
+/** Whether the Brain Blitz round has reached its target score. */
+export function getBrainBlitzAchieved(state: GameState): boolean {
+  const blitz = state.brainBlitz;
+  if (!blitz) return false;
+  return getBrainBlitzTotalScore(state) >= blitz.targetScore;
+}
+
+/** The finalist team (the normal-game winner, or the teacher-chosen tie winner). */
+export function getBrainBlitzFinalistTeam(state: GameState): Team | null {
+  const blitz = state.brainBlitz;
+  if (!blitz || blitz.finalistTeamId === null) return null;
+  return getTeamById(state, blitz.finalistTeamId) ?? null;
+}
+
+/**
+ * Whether Player 1 already accepted the given answer for the given question.
+ * Player 2 cannot score a canonical answer Player 1 already used (duplicate rule).
+ */
+export function isBrainBlitzAnswerUsedByPlayer1(
+  state: GameState,
+  questionId: string,
+  answerId: string,
+): boolean {
+  const blitz = state.brainBlitz;
+  if (!blitz) return false;
+  return blitz.player1Responses.some(
+    (response) =>
+      response.questionId === questionId &&
+      response.status === 'accepted' &&
+      response.answerId === answerId,
+  );
 }

@@ -19,7 +19,12 @@ export default function App() {
 
   function startGameSet(set: SavedGameSet) {
     const rounds = toFeudRounds(set.rounds);
-    dispatch({ type: 'LOAD_GAME_ROUNDS', roundLibrary: rounds, rounds });
+    dispatch({
+      type: 'LOAD_GAME_ROUNDS',
+      roundLibrary: rounds,
+      rounds,
+      brainBlitzConfig: set.brainBlitz ?? null,
+    });
     setScreen('play');
   }
 

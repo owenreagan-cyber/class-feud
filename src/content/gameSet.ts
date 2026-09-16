@@ -1,4 +1,15 @@
 import type { FeudRound, Multiplier } from '../game/gameTypes';
+import {
+  BRAIN_BLITZ_DEFAULT_QUESTIONS,
+  BRAIN_BLITZ_DEFAULT_TARGET,
+  BRAIN_BLITZ_DEFAULT_TIMER_SECONDS,
+  cloneBrainBlitzConfig,
+} from '../game/brainBlitzTypes';
+import type {
+  BrainBlitzAnswer,
+  BrainBlitzConfig,
+  BrainBlitzQuestion,
+} from '../game/brainBlitzTypes';
 
 /**
  * Authored content model — kept strictly separate from active runtime game
@@ -35,6 +46,8 @@ export type SavedGameSet = {
   createdAt: string;
   updatedAt: string;
   rounds: RoundDefinition[];
+  /** Optional Brain Blitz final-round configuration. Absent = disabled. */
+  brainBlitz?: BrainBlitzConfig;
 };
 
 /** Generate a stable, unique id. Uses the platform UUID when available. */
@@ -91,6 +104,7 @@ export function cloneGameSet(set: SavedGameSet): SavedGameSet {
       ...round,
       answers: round.answers.map((answer) => ({ ...answer, aliases: [...answer.aliases] })),
     })),
+    brainBlitz: set.brainBlitz ? cloneBrainBlitzConfig(set.brainBlitz) : undefined,
   };
 }
 
@@ -120,6 +134,7 @@ export function createEmptyGameSet(): SavedGameSet {
     createdAt: now,
     updatedAt: now,
     rounds: [],
+    brainBlitz: createDefaultBrainBlitzConfig(),
   };
 }
 
@@ -152,5 +167,47 @@ export function duplicateGameSet(source: SavedGameSet): SavedGameSet {
     createdAt: now,
     updatedAt: now,
     rounds: source.rounds.map(cloneRoundWithNewIds),
+    brainBlitz: source.brainBlitz ? duplicateBrainBlitzConfig(source.brainBlitz) : undefined,
   };
+}
+
+// ------------------------------------------------------------- Brain Blitz --
+
+export function createEmptyBrainBlitzAnswer(): BrainBlitzAnswer {
+  return { id: newId('blitz-answer'), text: '', points: 0, aliases: [] };
+}
+
+export function createEmptyBrainBlitzQuestion(): BrainBlitzQuestion {
+  return {
+    id: newId('blitz-question'),
+    prompt: '',
+    category: '',
+    answers: [createEmptyBrainBlitzAnswer(), createEmptyBrainBlitzAnswer()],
+  };
+}
+
+/**
+ * A disabled Brain Blitz config with the recommended defaults and five blank
+ * question slots, ready for the teacher to fill in and enable.
+ */
+export function createDefaultBrainBlitzConfig(): BrainBlitzConfig {
+  return {
+    enabled: false,
+    timerSeconds: BRAIN_BLITZ_DEFAULT_TIMER_SECONDS,
+    targetScore: BRAIN_BLITZ_DEFAULT_TARGET,
+    questions: Array.from({ length: BRAIN_BLITZ_DEFAULT_QUESTIONS }, createEmptyBrainBlitzQuestion),
+  };
+}
+
+function duplicateBrainBlitzAnswer(def: BrainBlitzAnswer): BrainBlitzAnswer {
+  return { ...def, id: newId('blitz-answer'), aliases: [...def.aliases] };
+}
+
+function duplicateBrainBlitzQuestion(def: BrainBlitzQuestion): BrainBlitzQuestion {
+  return { ...def, id: newId('blitz-question'), answers: def.answers.map(duplicateBrainBlitzAnswer) };
+}
+
+/** Copy a Brain Blitz config with brand-new question/answer ids (no shared refs). */
+export function duplicateBrainBlitzConfig(config: BrainBlitzConfig): BrainBlitzConfig {
+  return { ...config, questions: config.questions.map(duplicateBrainBlitzQuestion) };
 }

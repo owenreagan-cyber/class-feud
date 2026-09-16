@@ -82,7 +82,20 @@ export function isValidSavedGameSet(value: unknown): value is SavedGameSet {
   if (!Array.isArray(value.rounds) || !value.rounds.every(isValidRoundDefinition)) {
     return false;
   }
+  if (value.brainBlitz !== undefined && !isValidBrainBlitzConfig(value.brainBlitz)) {
+    return false;
+  }
   return true;
+}
+
+function isValidBrainBlitzConfig(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.enabled === 'boolean' &&
+    isNumber(value.timerSeconds) &&
+    isNumber(value.targetScore) &&
+    Array.isArray(value.questions)
+  );
 }
 
 export function loadGameSets(): SavedGameSet[] {

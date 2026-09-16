@@ -1236,3 +1236,197 @@ textarea.field-input {
     font-size: 44px;
   }
 }
+
+/* ============================================================
+   Brain Blitz (optional final round)
+   ============================================================ */
+
+/* Presenter */
+
+.bb-available {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bb-presenter {
+  gap: 18px;
+  justify-content: flex-start;
+  text-align: center;
+}
+
+.bb-presenter-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bb-presenter-title {
+  font-size: clamp(44px, 8vw, 96px);
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.bb-presenter-finalist {
+  font-size: 26px;
+  color: var(--muted);
+}
+
+.bb-presenter-question-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.bb-presenter-player {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.bb-presenter-count {
+  font-size: 22px;
+  color: var(--muted);
+}
+
+.bb-presenter-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.bb-presenter-timer-value {
+  font-size: clamp(64px, 14vw, 140px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.bb-presenter-expired {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.bb-presenter-prompt {
+  font-size: clamp(36px, 6vw, 72px);
+}
+
+.bb-result-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(480px, 100%);
+}
+
+.bb-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  font-size: 30px;
+  font-weight: 700;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bb-result-row--total {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--accent);
+  border-bottom-width: 2px;
+}
+
+.bb-count-up {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+/* Teacher controls */
+
+.bb-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bb-timer-value {
+  font-size: 40px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.bb-expired {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.bb-duplicate {
+  padding: 8px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* Authoring */
+
+.bb-enable {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bb-enable input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+
+.bb-config-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bb-config-row .field {
+  flex: 1 1 200px;
+}
+
+.bb-question-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bb-question-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bb-question-category {
+  width: 160px;
+}

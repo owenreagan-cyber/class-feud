@@ -1,5 +1,12 @@
 // Core domain types for Class Feud.
 
+import type {
+  BrainBlitzConfig,
+  BrainBlitzPlayerMode,
+  BrainBlitzResolution,
+  BrainBlitzState,
+} from './brainBlitzTypes';
+
 export type TeamId = string;
 
 export type GamePhase =
@@ -8,7 +15,8 @@ export type GamePhase =
   | 'playing'
   | 'steal'
   | 'roundOver'
-  | 'gameOver';
+  | 'gameOver'
+  | 'brainBlitz';
 
 export type Team = {
   id: TeamId;
@@ -54,6 +62,10 @@ export type GameState = {
   roundLibrary: FeudRound[];
   rounds: FeudRound[];
   currentRoundIndex: number;
+  /** Authored Brain Blitz configuration (runtime copy; null when unavailable). */
+  brainBlitzConfig: BrainBlitzConfig | null;
+  /** Live Brain Blitz runtime state (null until a Brain Blitz round starts). */
+  brainBlitz: BrainBlitzState | null;
 };
 
 export type GameAction =
@@ -64,7 +76,7 @@ export type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'UNDO' }
   // Load authored rounds as the active game queue (enters `setup`).
-  | { type: 'LOAD_GAME_ROUNDS'; roundLibrary: FeudRound[]; rounds: FeudRound[] }
+  | { type: 'LOAD_GAME_ROUNDS'; roundLibrary: FeudRound[]; rounds: FeudRound[]; brainBlitzConfig?: BrainBlitzConfig | null }
   // Team structure (setup only)
   | { type: 'UPDATE_TEAMS'; teams: Team[] }
   | { type: 'ADD_TEAM' }
@@ -84,7 +96,19 @@ export type GameAction =
   | { type: 'START_STEAL' }
   | { type: 'SET_STEAL_TEAM'; teamId: TeamId }
   | { type: 'RESOLVE_STEAL'; success: boolean }
-  | { type: 'AWARD_ROUND'; teamId?: TeamId };
+  | { type: 'AWARD_ROUND'; teamId?: TeamId }
+  // Brain Blitz final round (optional)
+  | { type: 'BRAIN_BLITZ_ENTER' }
+  | { type: 'BRAIN_BLITZ_SET_FINALIST'; teamId: TeamId }
+  | { type: 'BRAIN_BLITZ_SET_PLAYER_MODE'; playerMode: BrainBlitzPlayerMode }
+  | { type: 'BRAIN_BLITZ_BEGIN_PLAYER' }
+  | { type: 'BRAIN_BLITZ_NEXT_PLAYER' }
+  | { type: 'BRAIN_BLITZ_PAUSE' }
+  | { type: 'BRAIN_BLITZ_RESUME' }
+  | { type: 'BRAIN_BLITZ_TICK' }
+  | { type: 'BRAIN_BLITZ_RESOLVE'; rawResponse: string; resolution: BrainBlitzResolution; answerId?: string }
+  | { type: 'BRAIN_BLITZ_END_PLAYER' }
+  | { type: 'BRAIN_BLITZ_EXIT' };
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
   setup: 'Setup',
@@ -93,6 +117,7 @@ export const PHASE_LABELS: Record<GamePhase, string> = {
   steal: 'Steal',
   roundOver: 'Round Over',
   gameOver: 'Game Over',
+  brainBlitz: 'Brain Blitz',
 };
 
 export const MAX_STRIKES = 3;

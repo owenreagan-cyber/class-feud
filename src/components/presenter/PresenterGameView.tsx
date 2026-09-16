@@ -10,9 +10,11 @@ import {
 } from '../../game/gameSelectors';
 import { MULTIPLIER_LABELS } from '../../game/gameTypes';
 import type { FeudRound, GameState } from '../../game/gameTypes';
+import { isBrainBlitzEnabled } from '../../game/brainBlitzTypes';
 import AnswerBoard from '../board/AnswerBoard';
 import StrikeIndicators from '../board/StrikeIndicators';
 import Scoreboard from '../scoreboard/Scoreboard';
+import BrainBlitzPresenter from './BrainBlitzPresenter';
 
 function statusText(state: GameState): string {
   switch (state.phase) {
@@ -83,6 +85,9 @@ function GameOverView({ state }: { state: GameState }) {
       ) : (
         <h2 className="result-headline">{winner ? `${winner.name} wins!` : 'Game over'}</h2>
       )}
+      {isBrainBlitzEnabled(state.brainBlitzConfig) && (
+        <span className="bb-available">Brain Blitz available</span>
+      )}
     </div>
   );
 }
@@ -91,6 +96,19 @@ export default function PresenterGameView({ state }: { state: GameState }) {
   const round = getCurrentRound(state);
   const roundNumber = state.currentRoundIndex + 1;
   const totalRounds = state.rounds.length;
+
+  if (state.phase === 'brainBlitz') {
+    return (
+      <div className="presenter">
+        <header className="presenter-header">
+          <span className="brand">Class Feud</span>
+          <span className="multiplier-badge">Brain Blitz</span>
+        </header>
+        <Scoreboard state={state} />
+        <BrainBlitzPresenter state={state} />
+      </div>
+    );
+  }
 
   return (
     <div className="presenter">

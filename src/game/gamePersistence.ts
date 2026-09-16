@@ -11,9 +11,22 @@ const VALID_PHASES: GamePhase[] = [
   'steal',
   'roundOver',
   'gameOver',
+  'brainBlitz',
 ];
 
 const VALID_MULTIPLIERS: Multiplier[] = [1, 2, 3];
+
+const VALID_BRAIN_BLITZ_STATUSES = [
+  'setup',
+  'player1Ready',
+  'player1Active',
+  'player1Complete',
+  'player2Ready',
+  'player2Active',
+  'complete',
+] as const;
+
+const VALID_BRAIN_BLITZ_RESPONSE_STATUSES = ['accepted', 'duplicate', 'noMatch', 'skipped'] as const;
 
 type PersistedEnvelope = {
   version: number;
@@ -72,6 +85,77 @@ function isValidRound(value: unknown): value is FeudRound {
   );
 }
 
+function isValidBrainBlitzAnswer(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.text === 'string' &&
+    Array.isArray(value.aliases) &&
+    value.aliases.every((alias) => typeof alias === 'string') &&
+    isNonNegativeNumber(value.points)
+  );
+}
+
+function isValidBrainBlitzQuestion(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.prompt === 'string' &&
+    (value.category === undefined || typeof value.category === 'string') &&
+    Array.isArray(value.answers) &&
+    value.answers.every(isValidBrainBlitzAnswer)
+  );
+}
+
+function isValidBrainBlitzConfig(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.enabled === 'boolean' &&
+    isNonNegativeNumber(value.timerSeconds) &&
+    isNonNegativeNumber(value.targetScore) &&
+    Array.isArray(value.questions) &&
+    value.questions.every(isValidBrainBlitzQuestion)
+  );
+}
+
+function isValidBrainBlitzResponse(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.questionId === 'string' &&
+    typeof value.rawResponse === 'string' &&
+    (value.answerId === null || typeof value.answerId === 'string') &&
+    isNonNegativeNumber(value.points) &&
+    VALID_BRAIN_BLITZ_RESPONSE_STATUSES.includes(
+      value.status as (typeof VALID_BRAIN_BLITZ_RESPONSE_STATUSES)[number],
+    )
+  );
+}
+
+function isValidBrainBlitzState(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!VALID_BRAIN_BLITZ_STATUSES.includes(value.status as (typeof VALID_BRAIN_BLITZ_STATUSES)[number])) {
+    return false;
+  }
+  if (value.finalistTeamId !== null && typeof value.finalistTeamId !== 'string') return false;
+  if (value.playerMode !== 'one' && value.playerMode !== 'two') return false;
+  if (value.currentPlayer !== 1 && value.currentPlayer !== 2) return false;
+  if (!isNonNegativeInteger(value.currentQuestionIndex)) return false;
+  if (!Array.isArray(value.player1Responses) || !value.player1Responses.every(isValidBrainBlitzResponse)) {
+    return false;
+  }
+  if (!Array.isArray(value.player2Responses) || !value.player2Responses.every(isValidBrainBlitzResponse)) {
+    return false;
+  }
+  if (!isNonNegativeNumber(value.player1Score)) return false;
+  if (!isNonNegativeNumber(value.player2Score)) return false;
+  if (!isNonNegativeNumber(value.targetScore)) return false;
+  if (!isNonNegativeNumber(value.timerSeconds)) return false;
+  if (!isNonNegativeNumber(value.remainingSeconds)) return false;
+  if (typeof value.timerRunning !== 'boolean') return false;
+  if (typeof value.timerExpired !== 'boolean') return false;
+  return true;
+}
+
 function isValidGameState(value: unknown): value is GameState {
   if (!isRecord(value)) return false;
 
@@ -125,6 +209,20 @@ function isValidGameState(value: unknown): value is GameState {
   if (!isNonNegativeInteger(currentRoundIndex)) return false;
   if (currentRoundIndex >= rounds.length) return false;
 
+  const brainBlitzConfig = value.brainBlitzConfig;
+  if (
+    brainBlitzConfig !== null &&
+    brainBlitzConfig !== undefined &&
+    !isValidBrainBlitzConfig(brainBlitzConfig)
+  ) {
+    return false;
+  }
+
+  const brainBlitz = value.brainBlitz;
+  if (brainBlitz !== null && brainBlitz !== undefined && !isValidBrainBlitzState(brainBlitz)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -141,7 +239,13 @@ export function savePersistedState(state: GameState): void {
   const storage = getStorage();
   if (!storage) return;
   try {
-    const envelope: PersistedEnvelope = { version: PERSIST_VERSION, state };
+    // A running timer is transient: persist it as PAUSED so a page reload never
+    // auto-resumes the Brain Blitz countdown. Remaining time is still kept.
+    const persisted: GameState =
+      state.brainBlitz && state.brainBlitz.timerRunning
+        ? { ...state, brainBlitz: { ...state.brainBlitz, timerRunning: false } }
+        : state;
+    const envelope: PersistedEnvelope = { version: PERSIST_VERSION, state: persisted };
     storage.setItem(STORAGE_KEY, JSON.stringify(envelope));
   } catch {
     // Storage may be unavailable or full; persistence is best-effort.
@@ -158,7 +262,13 @@ export function loadPersistedState(): GameState | null {
     if (!isRecord(parsed)) return null;
     if (parsed.version !== PERSIST_VERSION) return null;
     if (!isValidGameState(parsed.state)) return null;
-    return parsed.state;
+    const state = parsed.state as GameState;
+    // Normalize fields that were absent in older saves to explicit null.
+    return {
+      ...state,
+      brainBlitzConfig: state.brainBlitzConfig ?? null,
+      brainBlitz: state.brainBlitz ?? null,
+    };
   } catch {
     return null;
   }

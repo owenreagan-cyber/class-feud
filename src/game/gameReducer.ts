@@ -1,8 +1,16 @@
-import { getCurrentRound, getEligibleStealTeams, getRoundValue } from './gameSelectors';
+import { getCurrentRound, getEligibleStealTeams, getRoundValue, getWinner } from './gameSelectors';
 import { DEFAULT_ROUND_IDS, ROUND_LIBRARY } from './roundLibrary';
 import { DEFAULT_TEAMS } from './sampleData';
 import { MAX_STRIKES, MAX_TEAMS, MIN_TEAMS, TEAM_COLORS } from './gameTypes';
 import type { FeudRound, GameAction, GameState, Team, TeamId } from './gameTypes';
+import { cloneBrainBlitzConfig, isBrainBlitzEnabled } from './brainBlitzTypes';
+import type {
+  BrainBlitzConfig,
+  BrainBlitzPlayer,
+  BrainBlitzPlayerMode,
+  BrainBlitzResponse,
+  BrainBlitzState,
+} from './brainBlitzTypes';
 
 /** Deep-clone a round and reset every answer to unrevealed. */
 export function cloneRound(round: FeudRound): FeudRound {
@@ -39,6 +47,8 @@ export function createInitialState(): GameState {
     roundLibrary: ROUND_LIBRARY.map(cloneRound),
     rounds: buildSelectedRounds(DEFAULT_ROUND_IDS, ROUND_LIBRARY),
     currentRoundIndex: 0,
+    brainBlitzConfig: null,
+    brainBlitz: null,
   };
 }
 
@@ -84,6 +94,26 @@ function enterSteal(state: GameState): GameState {
 
 function isSetupActionAllowed(state: GameState): boolean {
   return state.phase === 'setup';
+}
+
+/** Create the live Brain Blitz runtime state from an enabled config. */
+function createBrainBlitzState(config: BrainBlitzConfig, finalistTeamId: TeamId | null): BrainBlitzState {
+  return {
+    status: 'setup',
+    finalistTeamId,
+    playerMode: 'two',
+    currentPlayer: 1,
+    currentQuestionIndex: 0,
+    player1Responses: [],
+    player2Responses: [],
+    player1Score: 0,
+    player2Score: 0,
+    targetScore: config.targetScore,
+    timerSeconds: config.timerSeconds,
+    remainingSeconds: config.timerSeconds,
+    timerRunning: false,
+    timerExpired: false,
+  };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -213,6 +243,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...base,
         roundLibrary: action.roundLibrary.map(cloneRound),
         rounds: action.rounds.map(cloneRound),
+        brainBlitzConfig: action.brainBlitzConfig
+          ? cloneBrainBlitzConfig(action.brainBlitzConfig)
+          : null,
       };
     }
 
@@ -332,6 +365,199 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return awardRound(state, teamId, getRoundValue(state));
     }
 
+    // -------- Brain Blitz final round (optional) --------
+
+    case 'BRAIN_BLITZ_ENTER': {
+      if (state.phase !== 'gameOver') return state;
+      const config = state.brainBlitzConfig;
+      if (!isBrainBlitzEnabled(config)) return state;
+      const winner = getWinner(state);
+      return {
+        ...state,
+        phase: 'brainBlitz',
+        brainBlitz: createBrainBlitzState(config, winner ? winner.id : null),
+      };
+    }
+
+    case 'BRAIN_BLITZ_SET_FINALIST': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz || blitz.status !== 'setup') return state;
+      if (!state.teams.some((team) => team.id === action.teamId)) return state;
+      return { ...state, brainBlitz: { ...blitz, finalistTeamId: action.teamId } };
+    }
+
+    case 'BRAIN_BLITZ_SET_PLAYER_MODE': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz || blitz.status !== 'setup') return state;
+      const playerMode: BrainBlitzPlayerMode = action.playerMode;
+      return {
+        ...state,
+        brainBlitz: {
+          ...blitz,
+          playerMode,
+          status: 'player1Ready',
+          currentPlayer: 1,
+          currentQuestionIndex: 0,
+          player1Responses: [],
+          player2Responses: [],
+          player1Score: 0,
+          player2Score: 0,
+          remainingSeconds: blitz.timerSeconds,
+          timerRunning: false,
+          timerExpired: false,
+        },
+      };
+    }
+
+    case 'BRAIN_BLITZ_BEGIN_PLAYER': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz) return state;
+      if (blitz.status === 'player1Ready' || blitz.status === 'player2Ready') {
+        return {
+          ...state,
+          brainBlitz: {
+            ...blitz,
+            status: blitz.status === 'player1Ready' ? 'player1Active' : 'player2Active',
+            timerRunning: true,
+            timerExpired: false,
+            remainingSeconds: blitz.timerSeconds,
+          },
+        };
+      }
+      return state;
+    }
+
+    case 'BRAIN_BLITZ_NEXT_PLAYER': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz || blitz.status !== 'player1Complete') return state;
+      if (blitz.playerMode !== 'two') return state;
+      return {
+        ...state,
+        brainBlitz: {
+          ...blitz,
+          status: 'player2Ready',
+          currentPlayer: 2,
+          currentQuestionIndex: 0,
+          remainingSeconds: blitz.timerSeconds,
+          timerRunning: false,
+          timerExpired: false,
+        },
+      };
+    }
+
+    case 'BRAIN_BLITZ_PAUSE': {
+      const blitz = state.brainBlitz;
+      if (!blitz || !blitz.timerRunning) return state;
+      return { ...state, brainBlitz: { ...blitz, timerRunning: false } };
+    }
+
+    case 'BRAIN_BLITZ_RESUME': {
+      const blitz = state.brainBlitz;
+      if (!blitz || blitz.timerRunning) return state;
+      const isActive = blitz.status === 'player1Active' || blitz.status === 'player2Active';
+      if (!isActive || blitz.remainingSeconds <= 0) return state;
+      return { ...state, brainBlitz: { ...blitz, timerRunning: true, timerExpired: false } };
+    }
+
+    case 'BRAIN_BLITZ_TICK': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz || !blitz.timerRunning) return state;
+      if (blitz.remainingSeconds <= 0) return state;
+      const remainingSeconds = blitz.remainingSeconds - 1;
+      const expired = remainingSeconds <= 0;
+      return {
+        ...state,
+        brainBlitz: {
+          ...blitz,
+          remainingSeconds,
+          timerRunning: !expired,
+          timerExpired: expired,
+        },
+      };
+    }
+
+    case 'BRAIN_BLITZ_RESOLVE': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz) return state;
+      if (blitz.status !== 'player1Active' && blitz.status !== 'player2Active') return state;
+      const config = state.brainBlitzConfig;
+      if (!config) return state;
+      const question = config.questions[blitz.currentQuestionIndex];
+      if (!question) return state;
+
+      const player: BrainBlitzPlayer = blitz.currentPlayer;
+      const resolution = action.resolution;
+
+      let status: BrainBlitzResponse['status'];
+      let answerId: string | null = null;
+      let points = 0;
+
+      if (resolution === 'accepted') {
+        const resolvedId = action.answerId ?? null;
+        const answer = resolvedId ? question.answers.find((a) => a.id === resolvedId) : undefined;
+        if (!answer) return state; // accepted without a valid answer id is a no-op
+        const isDuplicate =
+          player === 2 &&
+          blitz.player1Responses.some(
+            (r) => r.questionId === question.id && r.status === 'accepted' && r.answerId === resolvedId,
+          );
+        status = isDuplicate ? 'duplicate' : 'accepted';
+        answerId = resolvedId;
+        points = isDuplicate ? 0 : answer.points;
+      } else {
+        status = resolution;
+      }
+
+      const response: BrainBlitzResponse = {
+        questionId: question.id,
+        rawResponse: action.rawResponse,
+        answerId,
+        points,
+        status,
+      };
+
+      const player1Responses = player === 1 ? [...blitz.player1Responses, response] : blitz.player1Responses;
+      const player2Responses = player === 2 ? [...blitz.player2Responses, response] : blitz.player2Responses;
+      const player1Score = player === 1 ? blitz.player1Score + points : blitz.player1Score;
+      const player2Score = player === 2 ? blitz.player2Score + points : blitz.player2Score;
+
+      const finished = blitz.currentQuestionIndex + 1 >= config.questions.length;
+      const nextStatus =
+        finished
+          ? player === 1 && blitz.playerMode === 'two'
+            ? 'player1Complete'
+            : 'complete'
+          : blitz.status;
+
+      return {
+        ...state,
+        brainBlitz: {
+          ...blitz,
+          status: nextStatus,
+          currentQuestionIndex: finished ? blitz.currentQuestionIndex : blitz.currentQuestionIndex + 1,
+          player1Responses,
+          player2Responses,
+          player1Score,
+          player2Score,
+          timerRunning: finished ? false : blitz.timerRunning,
+        },
+      };
+    }
+
+    case 'BRAIN_BLITZ_END_PLAYER': {
+      const blitz = state.brainBlitz;
+      if (state.phase !== 'brainBlitz' || !blitz) return state;
+      if (blitz.status !== 'player1Active' && blitz.status !== 'player2Active') return state;
+      const nextStatus =
+        blitz.currentPlayer === 1 && blitz.playerMode === 'two' ? 'player1Complete' : 'complete';
+      return { ...state, brainBlitz: { ...blitz, status: nextStatus, timerRunning: false } };
+    }
+
+    case 'BRAIN_BLITZ_EXIT': {
+      if (state.phase !== 'brainBlitz') return state;
+      return { ...state, phase: 'gameOver', brainBlitz: null };
+    }
+
     default:
       return state;
   }
@@ -352,6 +578,13 @@ export function historyReducer(history: HistoryState, action: GameAction): Histo
     const present = history.past[history.past.length - 1];
     const past = history.past.slice(0, -1);
     return { past, present };
+  }
+  if (action.type === 'BRAIN_BLITZ_TICK') {
+    // The timer countdown is transient: applying it must not pollute the undo
+    // stack (otherwise every second becomes an "Undo" step). This is the single
+    // documented boundary between normal-game history and Brain Blitz history.
+    const next = gameReducer(history.present, action);
+    return next === history.present ? history : { past: history.past, present: next };
   }
   const next = gameReducer(history.present, action);
   if (next === history.present) return history;

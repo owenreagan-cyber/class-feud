@@ -4,6 +4,7 @@ import { MULTIPLIER_LABELS } from '../game/gameTypes';
 import type { Multiplier } from '../game/gameTypes';
 import {
   cloneGameSet,
+  createDefaultBrainBlitzConfig,
   createEmptyAnswer,
   createEmptyGameSet,
   createEmptyRound,
@@ -12,6 +13,8 @@ import {
 import type { AnswerDefinition, RoundDefinition, SavedGameSet } from '../content/gameSet';
 import { getGameSet, saveGameSet } from '../content/gameSetStore';
 import { hasErrors, validateGameSet } from '../content/contentValidation';
+import type { BrainBlitzConfig } from '../game/brainBlitzTypes';
+import BrainBlitzAuthoring from '../components/authoring/BrainBlitzAuthoring';
 
 const MULTIPLIERS: Multiplier[] = [1, 2, 3];
 
@@ -157,9 +160,14 @@ type Props = {
 
 export default function AuthoringScreen({ setId, onReturn }: Props) {
   const [draft, setDraft] = useState<SavedGameSet>(() => {
-    if (setId === null) return createEmptyGameSet();
-    const existing = getGameSet(setId);
-    return existing ? cloneGameSet(existing) : createEmptyGameSet();
+    const base =
+      setId === null
+        ? createEmptyGameSet()
+        : (() => {
+            const existing = getGameSet(setId);
+            return existing ? cloneGameSet(existing) : createEmptyGameSet();
+          })();
+    return { ...base, brainBlitz: base.brainBlitz ?? createDefaultBrainBlitzConfig() };
   });
   const [editingRoundId, setEditingRoundId] = useState<string | null>(draft.rounds[0]?.id ?? null);
 
@@ -172,6 +180,10 @@ export default function AuthoringScreen({ setId, onReturn }: Props) {
 
   function updateField<K extends keyof SavedGameSet>(key: K, value: SavedGameSet[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateBrainBlitz(config: BrainBlitzConfig) {
+    setDraft((current) => ({ ...current, brainBlitz: config }));
   }
 
   function updateRound(roundId: string, updater: (round: RoundDefinition) => RoundDefinition) {
@@ -387,6 +399,8 @@ export default function AuthoringScreen({ setId, onReturn }: Props) {
           </div>
         )}
       </section>
+
+      <BrainBlitzAuthoring config={draft.brainBlitz!} onChange={updateBrainBlitz} />
 
       {editingRound ? (
         <section className="round-editor">

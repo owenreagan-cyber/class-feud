@@ -16,6 +16,8 @@ import { MAX_STRIKES, MULTIPLIER_LABELS, PHASE_LABELS } from '../../game/gameTyp
 import type { FeudAnswer, GameAction, GameState, Team } from '../../game/gameTypes';
 import { matchAnswer } from '../../game/answerMatcher';
 import type { AnswerMatchResult, MatchQuality } from '../../game/answerMatcher';
+import { isBrainBlitzEnabled } from '../../game/brainBlitzTypes';
+import BrainBlitzTeacherControls from './BrainBlitzTeacherControls';
 
 const QUALITY_LABEL: Record<MatchQuality, string> = {
   exact: 'Exact match',
@@ -290,6 +292,9 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
   // Classroom-speed keyboard shortcuts. Safe: gated on focus so typing works.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // During Brain Blitz the dedicated controls own the keyboard.
+      if (phase === 'brainBlitz') return;
+
       if (event.key === 'Escape') {
         setGuess('');
         setMatch(null);
@@ -342,6 +347,8 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
       </div>
 
       <div className="teacher-body">
+        {phase === 'brainBlitz' && <BrainBlitzTeacherControls state={state} dispatch={dispatch} />}
+
         {(phase === 'playing' || phase === 'steal') && (
           <ConsoleSection title="Student Guess">
             <label className="guess-label" htmlFor="student-guess">
@@ -555,6 +562,16 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
                 </span>
               ))}
             </div>
+            {isBrainBlitzEnabled(state.brainBlitzConfig) && (
+              <div className="button-row">
+                <button
+                  className="primary"
+                  onClick={() => dispatch({ type: 'BRAIN_BLITZ_ENTER' })}
+                >
+                  Play Brain Blitz
+                </button>
+              </div>
+            )}
             <div className="button-row">
               <button
                 className="primary"

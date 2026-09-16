@@ -1,6 +1,8 @@
 import { ROUND_LIBRARY } from '../game/roundLibrary';
 import { toRoundDefinition } from './gameSet';
 import type { RoundDefinition, SavedGameSet } from './gameSet';
+import { buildBrainBlitzQuestions } from './brainBlitzLibrary';
+import type { BrainBlitzConfig } from '../game/brainBlitzTypes';
 
 /**
  * Built-in demo game sets. These are read-only and never mutated in place;
@@ -14,11 +16,22 @@ const ROUND_BY_ID: Map<string, RoundDefinition> = new Map(
   ROUND_LIBRARY.map((round) => [round.id, toRoundDefinition(round)]),
 );
 
+function brainBlitz(questionIds: string[], overrides: Partial<BrainBlitzConfig> = {}): BrainBlitzConfig {
+  return {
+    enabled: true,
+    timerSeconds: 30,
+    targetScore: 200,
+    questions: buildBrainBlitzQuestions(questionIds),
+    ...overrides,
+  };
+}
+
 function buildSet(
   id: string,
   title: string,
   description: string,
   roundIds: string[],
+  blitz?: BrainBlitzConfig,
 ): SavedGameSet {
   const createdAt = '2026-09-16T00:00:00.000Z';
   return {
@@ -37,6 +50,7 @@ function buildSet(
         answers: round.answers.map((answer) => ({ ...answer, aliases: [...answer.aliases] })),
       };
     }),
+    brainBlitz: blitz,
   };
 }
 
@@ -46,30 +60,41 @@ export const BUILT_IN_GAME_SETS: SavedGameSet[] = [
     'Mixed Classroom Demo',
     'A little of everything: science, recess, and math.',
     ['round-1', 'round-2', 'round-recess', 'round-make24'],
+    brainBlitz([
+      'bb-math-multiple-6',
+      'bb-sci-plant',
+      'bb-ela-punct',
+      'bb-kid-recess',
+      'bb-kid-backpack',
+    ]),
   ),
   buildSet(
     'builtin-science',
     'Science Review Demo',
     'Plant needs, weather, and water.',
     ['round-1', 'round-2', 'round-science-water'],
+    brainBlitz(['bb-sci-plant', 'bb-sci-matter', 'bb-sci-weather', 'bb-sci-planet', 'bb-sci-float']),
   ),
   buildSet(
     'builtin-math',
     'Math Review Demo',
     'Make 24, one-half, and classroom shapes.',
     ['round-make24', 'round-math-half', 'round-math-shapes'],
+    brainBlitz(['bb-math-multiple-6', 'bb-math-shapes', 'bb-math-half', 'bb-math-even', 'bb-math-unit']),
   ),
   buildSet(
     'builtin-ela',
     'ELA Review Demo',
     'Story elements and punctuation.',
     ['round-ela-story', 'round-ela-punct'],
+    brainBlitz(['bb-ela-punct', 'bb-ela-speech', 'bb-ela-story', 'bb-ela-book', 'bb-ela-vowel']),
   ),
   buildSet(
     'builtin-kids',
     'Kid Interest Demo',
     'Recess and backpack favorites.',
     ['round-recess', 'round-backpack'],
+    brainBlitz(['bb-kid-recess', 'bb-kid-backpack', 'bb-kid-pizza', 'bb-kid-party', 'bb-kid-subject']),
   ),
 ];
 
