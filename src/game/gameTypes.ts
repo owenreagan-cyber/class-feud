@@ -63,6 +63,8 @@ export type GameAction =
   | { type: 'END_GAME' }
   | { type: 'RESET_GAME' }
   | { type: 'UNDO' }
+  // Load authored rounds as the active game queue (enters `setup`).
+  | { type: 'LOAD_GAME_ROUNDS'; roundLibrary: FeudRound[]; rounds: FeudRound[] }
   // Team structure (setup only)
   | { type: 'UPDATE_TEAMS'; teams: Team[] }
   | { type: 'ADD_TEAM' }

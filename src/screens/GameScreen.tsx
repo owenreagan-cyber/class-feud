@@ -7,11 +7,17 @@ type Props = {
   state: GameState;
   dispatch: Dispatch<GameAction>;
   canUndo: boolean;
+  onExitToLibrary?: () => void;
 };
 
-export default function GameScreen({ state, dispatch, canUndo }: Props) {
+export default function GameScreen({ state, dispatch, canUndo, onExitToLibrary }: Props) {
   return (
     <div className="game-screen">
+      {onExitToLibrary ? (
+        <button type="button" className="game-exit" onClick={onExitToLibrary}>
+          ← Library
+        </button>
+      ) : null}
       <PresenterGameView state={state} />
       <TeacherGameView state={state} dispatch={dispatch} canUndo={canUndo} />
     </div>

@@ -10,6 +10,7 @@ import type { GameAction, GameState, Multiplier } from '../game/gameTypes';
 type Props = {
   state: GameState;
   dispatch: Dispatch<GameAction>;
+  onBack?: () => void;
 };
 
 const MULTIPLIERS: Multiplier[] = [1, 2, 3];
@@ -23,7 +24,7 @@ function moveItem<T>(list: T[], index: number, direction: -1 | 1): T[] {
   return next;
 }
 
-export default function SetupScreen({ state, dispatch }: Props) {
+export default function SetupScreen({ state, dispatch, onBack }: Props) {
   const selectedCount = state.rounds.length;
 
   function addTeam() {
@@ -63,6 +64,11 @@ export default function SetupScreen({ state, dispatch }: Props) {
   return (
     <div className="setup-screen">
       <header className="setup-header">
+        {onBack ? (
+          <button type="button" className="setup-back" onClick={onBack}>
+            ← Back to Library
+          </button>
+        ) : null}
         <h1 className="setup-title">Class Feud</h1>
         <p className="setup-subtitle">Set up teams and rounds, then start.</p>
       </header>

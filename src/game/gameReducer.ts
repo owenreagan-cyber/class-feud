@@ -203,6 +203,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // -------- Lifecycle --------
 
+    case 'LOAD_GAME_ROUNDS': {
+      // Populate the active game from authored content. The incoming rounds are
+      // cloned so session edits (exclusion/reorder/multiplier) never mutate the
+      // saved source definitions. Starts a fresh `setup` configuration.
+      if (action.rounds.length === 0) return state;
+      const base = createInitialState();
+      return {
+        ...base,
+        roundLibrary: action.roundLibrary.map(cloneRound),
+        rounds: action.rounds.map(cloneRound),
+      };
+    }
+
     case 'START_GAME': {
       if (state.phase !== 'setup' && state.phase !== 'gameOver') return state;
       if (state.teams.length < MIN_TEAMS || state.rounds.length === 0) return state;

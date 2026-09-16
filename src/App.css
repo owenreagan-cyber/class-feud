@@ -768,6 +768,455 @@ button.revealed {
   padding: 12px;
 }
 
+/* ---------- Game exit / setup back ---------- */
+
+.game-exit {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  font-size: 15px;
+  padding: 8px 12px;
+}
+
+.setup-back {
+  align-self: flex-start;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+/* ---------- Game library ---------- */
+
+.library-screen {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.library-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.library-title {
+  font-size: 44px;
+  letter-spacing: -1px;
+}
+
+.library-subtitle {
+  color: var(--muted);
+  margin: 0;
+}
+
+.library-header .primary {
+  align-self: flex-start;
+  margin-top: 10px;
+  font-size: 17px;
+  padding: 12px 18px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 220px;
+  font-size: 16px;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-tab {
+  font-size: 15px;
+  padding: 8px 14px;
+}
+
+.filter-tab--on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.library-section h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.library-empty,
+.authoring-empty {
+  color: var(--muted);
+}
+
+.game-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.game-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.game-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.game-card-title-row h3 {
+  font-size: 19px;
+  margin: 0;
+}
+
+.badge {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--muted);
+}
+
+.badge--builtin {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.game-card-desc {
+  color: var(--muted);
+  margin: 0;
+  font-size: 15px;
+}
+
+.game-card-meta {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.game-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  align-self: center;
+}
+
+.delete-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.delete-confirm-text {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Authoring ---------- */
+
+.authoring-screen {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 20px 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.authoring-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.authoring-title {
+  font-size: 36px;
+  letter-spacing: -1px;
+}
+
+.authoring-subtitle {
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.authoring-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.authoring-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.authoring-section-head h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.field-input {
+  font-size: 16px;
+  padding: 10px 12px;
+}
+
+.field-input--lg {
+  font-size: 19px;
+}
+
+textarea.field-input {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.validation-summary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+
+.issue-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.issue {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 15px;
+}
+
+.issue-mark {
+  flex-shrink: 0;
+}
+
+.issue--error {
+  color: var(--danger);
+}
+
+.issue--warning {
+  color: var(--accent);
+}
+
+.round-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.round-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.round-row--active {
+  border-color: var(--accent);
+}
+
+.round-order {
+  color: var(--muted);
+  min-width: 22px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.round-row-main {
+  flex: 1;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.round-row-main:hover {
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.round-row-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.round-row-meta {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.round-editor {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.round-editor-title {
+  font-size: 18px;
+  margin: 0;
+}
+
+.answers-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.answers-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.answer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.answer-number {
+  color: var(--muted);
+  min-width: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.answer-text-input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.answer-points-input {
+  width: 88px;
+}
+
+.answer-row-full {
+  flex-basis: 100%;
+}
+
+.alias-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.alias-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.alias-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 6px 3px 10px;
+  font-size: 14px;
+}
+
+.alias-chip button {
+  border: none;
+  background: transparent;
+  padding: 0 4px;
+  font-size: 13px;
+}
+
+.alias-add {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.alias-add input {
+  width: 160px;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.authoring-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  padding: 12px 0;
+}
+
+.authoring-footer button {
+  font-size: 16px;
+  padding: 11px 16px;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (min-width: 1280px) {

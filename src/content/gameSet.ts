@@ -1,0 +1,156 @@
+import type { FeudRound, Multiplier } from '../game/gameTypes';
+
+/**
+ * Authored content model — kept strictly separate from active runtime game
+ * state. These definitions are durable, serializable teacher content and carry
+ * no runtime fields (no `revealed`, scores, strikes, phase, or possession).
+ *
+ * Future phases may add optional metadata such as `subject`, `gradeBand`, or
+ * `tags`; the shape below is designed to serialize cleanly to JSON.
+ */
+
+export type AnswerDefinition = {
+  id: string;
+  text: string;
+  points: number;
+  aliases: string[];
+};
+
+export type RoundDefinition = {
+  id: string;
+  title: string;
+  category: string;
+  prompt: string;
+  multiplier: Multiplier;
+  answers: AnswerDefinition[];
+};
+
+export type GameSetSource = 'builtin' | 'custom';
+
+export type SavedGameSet = {
+  id: string;
+  title: string;
+  description: string;
+  source: GameSetSource;
+  createdAt: string;
+  updatedAt: string;
+  rounds: RoundDefinition[];
+};
+
+/** Generate a stable, unique id. Uses the platform UUID when available. */
+export function newId(prefix = 'id'): string {
+  const rand =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  return `${prefix}-${rand}`;
+}
+
+/** Convert an authored answer into a runtime answer (adds `revealed`). */
+export function toFeudRound(def: RoundDefinition): FeudRound {
+  return {
+    id: def.id,
+    title: def.title,
+    category: def.category,
+    prompt: def.prompt,
+    multiplier: def.multiplier,
+    answers: def.answers.map((answer) => ({
+      ...answer,
+      aliases: [...answer.aliases],
+      revealed: false,
+    })),
+  };
+}
+
+export function toFeudRounds(defs: RoundDefinition[]): FeudRound[] {
+  return defs.map(toFeudRound);
+}
+
+/** Strip runtime fields from a runtime round to produce an authored definition. */
+export function toRoundDefinition(round: FeudRound): RoundDefinition {
+  return {
+    id: round.id,
+    title: round.title,
+    category: round.category,
+    prompt: round.prompt,
+    multiplier: round.multiplier,
+    answers: round.answers.map((answer) => ({
+      id: answer.id,
+      text: answer.text,
+      points: answer.points,
+      aliases: [...answer.aliases],
+    })),
+  };
+}
+
+/** Deep-clone a game set, preserving all ids. */
+export function cloneGameSet(set: SavedGameSet): SavedGameSet {
+  return {
+    ...set,
+    rounds: set.rounds.map((round) => ({
+      ...round,
+      answers: round.answers.map((answer) => ({ ...answer, aliases: [...answer.aliases] })),
+    })),
+  };
+}
+
+export function createEmptyAnswer(): AnswerDefinition {
+  return { id: newId('answer'), text: '', points: 0, aliases: [] };
+}
+
+/** A new round starts with two blank answers (the minimum for a valid round). */
+export function createEmptyRound(): RoundDefinition {
+  return {
+    id: newId('round'),
+    title: '',
+    category: '',
+    prompt: '',
+    multiplier: 1,
+    answers: [createEmptyAnswer(), createEmptyAnswer()],
+  };
+}
+
+export function createEmptyGameSet(): SavedGameSet {
+  const now = new Date().toISOString();
+  return {
+    id: newId('game'),
+    title: '',
+    description: '',
+    source: 'custom',
+    createdAt: now,
+    updatedAt: now,
+    rounds: [],
+  };
+}
+
+export function duplicateAnswer(def: AnswerDefinition): AnswerDefinition {
+  return { ...def, id: newId('answer'), aliases: [...def.aliases] };
+}
+
+/** Deep-copy a round with brand-new round/answer ids, preserving the title. */
+function cloneRoundWithNewIds(def: RoundDefinition): RoundDefinition {
+  return {
+    ...def,
+    id: newId('round'),
+    answers: def.answers.map(duplicateAnswer),
+  };
+}
+
+/** Duplicate a single round for editing; the title clearly marks the copy. */
+export function duplicateRound(def: RoundDefinition): RoundDefinition {
+  return { ...cloneRoundWithNewIds(def), title: `${def.title} — Copy` };
+}
+
+/** Produce an independent custom copy with brand-new game/round/answer ids. */
+export function duplicateGameSet(source: SavedGameSet): SavedGameSet {
+  const now = new Date().toISOString();
+  return {
+    ...source,
+    id: newId('game'),
+    title: `${source.title} — Copy`,
+    source: 'custom',
+    createdAt: now,
+    updatedAt: now,
+    rounds: source.rounds.map(cloneRoundWithNewIds),
+  };
+}
