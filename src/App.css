@@ -628,6 +628,91 @@ button.revealed {
   font-weight: 600;
 }
 
+.guess-label {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.guess-row {
+  display: flex;
+  gap: 8px;
+}
+
+.guess-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 20px;
+  padding: 12px 14px;
+}
+
+.guess-row button {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.match-panel {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.match-panel[data-quality='exact'],
+.match-panel[data-quality='alias'],
+.match-panel[data-quality='normalized'] {
+  border-left-color: var(--green);
+}
+
+.match-panel[data-quality='fuzzy'] {
+  border-left-color: var(--accent);
+}
+
+.match-panel[data-quality='ambiguous'] {
+  border-left-color: #f97316;
+}
+
+.match-panel[data-quality='alreadyRevealed'] {
+  border-left-color: var(--muted);
+}
+
+.match-panel[data-quality='none'] {
+  border-left-color: var(--danger);
+}
+
+.match-headline {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.match-answer {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.match-quality {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.candidate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.candidate-list button {
+  text-align: left;
+  font-size: 17px;
+}
+
 .team-pick-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

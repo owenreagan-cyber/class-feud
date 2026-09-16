@@ -252,7 +252,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'REVEAL_ANSWER': {
-      if (state.phase !== 'playing') return state;
+      // Reveal is allowed during `playing` and during `steal` so a confirmed
+      // steal guess can contribute its answer to the round pot exactly once
+      // before the steal is resolved. Awarding still happens only via
+      // RESOLVE_STEAL / AWARD_ROUND.
+      if (state.phase !== 'playing' && state.phase !== 'steal') return state;
       const round = getCurrentRound(state);
       const answer = round.answers.find((a) => a.id === action.answerId);
       if (!answer || answer.revealed) return state;
