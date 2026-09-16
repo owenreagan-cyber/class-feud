@@ -1,15 +1,32 @@
-# React + TypeScript + Vite
+# Class Feud
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Class Feud is a classroom review game inspired by *Family Feud*. This repository
+is **solely** for the Class Feud game — do not use it for unrelated projects.
 
-Currently, two official plugins are available:
+## Scope
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This repo contains the Class Feud game only:
 
-## React Compiler
+- game engine and round structure
+- team setup, toss-up rounds, survey rounds, steals
+- deterministic answer matching
+- teacher controls and presenter/projector views
+- custom game authoring and saved game library
+- tests, accessibility, and build tooling
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+See [`AGENTS.md`](./AGENTS.md) for the repository scope guard.
+
+## Development
+
+This is a React + TypeScript + Vite app.
+
+```bash
+npm install
+npm run dev      # start the dev server
+npm run test:safe # run the test suite once
+npm run build    # typecheck + production build
+npm run check:scope # verify no unrelated project content is present
+```
 
 ## Expanding the ESLint configuration
 

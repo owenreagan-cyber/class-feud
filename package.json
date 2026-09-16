@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:safe": "vitest run",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "check:scope": "node scripts/check-project-scope.mjs"
   },
   "dependencies": {
     "framer-motion": "^13.3.0",
