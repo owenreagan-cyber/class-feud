@@ -89,3 +89,21 @@ students in 4 teams.
 
 If an iPad disconnects mid-round it shows RECONNECTING and re-joins when it
 returns. The game never depends on a device staying connected.
+
+---
+
+## TROUBLESHOOTING
+
+- **Wrong port / page won't load:** always read the `Network:` line Vite
+  prints at startup (e.g. `http://192.168.4.47:5173/`). If port `5173` is
+  already in use, Vite picks the next free port (e.g. `5175`) and prints it.
+  Use whatever port is printed; do not assume `5173`.
+- **Team Buttons stuck on RECONNECTING / CONNECTING:** the Team Buttons
+  WebSocket server (port `5174`) could not start — usually because another
+  program is using that port, or the iPad network cannot reach the host. The
+  server console prints a `[Team Buttons] WebSocket server unavailable` line.
+  Switch to **manual face-off control** (SET FIRST TEAM) and keep playing;
+  Team Buttons are optional.
+- **iPads can't reach the host at all:** the school Wi-Fi is likely isolating
+  peers (client isolation). Use manual face-off mode; do not change the setup
+  during class.

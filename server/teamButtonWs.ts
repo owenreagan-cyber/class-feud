@@ -56,9 +56,16 @@ export function teamButtonWsPlugin(): Plugin {
     });
 
     // If the port is already taken, Team Buttons are unavailable but the app
-    // continues to work via manual face-off control (hard fallback).
-    wss.on('error', () => {
-      // Leave wss set so we don't retry in a tight loop.
+    // continues to work via manual face-off control (hard fallback). Surface
+    // the failure so the teacher knows to use manual mode.
+    wss.on('error', (err: Error) => {
+      console.error(
+        '[Team Buttons] WebSocket server unavailable (port ' +
+          TEAM_BUTTON_WS_PORT +
+          '): ' +
+          err.message +
+          '. Team Buttons disabled — use manual face-off.',
+      );
     });
   }
 
