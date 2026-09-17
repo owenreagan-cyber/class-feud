@@ -2,6 +2,11 @@ import { WebSocket, WebSocketServer } from 'ws';
 import type { Plugin } from 'vite';
 import { TeamButtonRoom } from '../src/teamButton/room.ts';
 import { TEAM_BUTTON_WS_PORT } from '../src/teamButton/protocol.ts';
+import {
+  DEFAULT_HEARTBEAT_INTERVAL_MS,
+  sweepHeartbeat,
+} from './heartbeat.ts';
+import type { HeartbeatClient } from './heartbeat.ts';
 
 /**
  * Vite plugin that runs the local Team Buttons WebSocket server alongside the
@@ -9,9 +14,16 @@ import { TEAM_BUTTON_WS_PORT } from '../src/teamButton/protocol.ts';
  * the app and the button server; team iPads open the app URL and connect to
  * the WebSocket on the fixed port below.
  */
-export function teamButtonWsPlugin(): Plugin {
+export function teamButtonWsPlugin(
+  options: { heartbeatIntervalMs?: number } = {},
+): Plugin {
+  const heartbeatIntervalMs =
+    options.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS;
   const room = new TeamButtonRoom();
+  const heartbeatClients = new Set<HeartbeatClient>();
+
   let tickInterval: ReturnType<typeof setInterval> | null = null;
+  let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
   function ensureTicking(): void {
     if (tickInterval) return;
@@ -33,12 +45,27 @@ export function teamButtonWsPlugin(): Plugin {
     if (wss) return;
     wss = new WebSocketServer({ port: TEAM_BUTTON_WS_PORT });
 
+    // Heartbeat: terminate clients that stop answering pings.
+    heartbeatInterval = setInterval(() => {
+      if (!wss) return; // guard against a teardown race during shutdown
+      sweepHeartbeat(heartbeatClients);
+    }, heartbeatIntervalMs);
+
     wss.on('connection', (socket) => {
       const clientId = room.register((message) => {
         if (socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify(message));
         }
       });
+
+      const client: HeartbeatClient = { socket, alive: true };
+      heartbeatClients.add(client);
+      // A pong marks the client alive again so the next sweep does not
+      // terminate it.
+      socket.on('pong', () => {
+        client.alive = true;
+      });
+
       socket.on('message', (data) => {
         let parsed: unknown;
         try {
@@ -49,7 +76,10 @@ export function teamButtonWsPlugin(): Plugin {
         room.handleMessage(clientId, parsed);
         if (room.isThinking()) ensureTicking();
       });
-      socket.on('close', () => room.unregister(clientId));
+      socket.on('close', () => {
+        heartbeatClients.delete(client);
+        room.unregister(clientId);
+      });
       socket.on('error', () => {
         // A single client error must not take the server down.
       });
@@ -69,6 +99,27 @@ export function teamButtonWsPlugin(): Plugin {
     });
   }
 
+  /**
+   * Idempotent teardown: clears the heartbeat (and think) intervals, nulls
+   * their references, captures and nulls `wss`, then closes the captured
+   * server. Safe to call multiple times.
+   */
+  function stop(): void {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+    if (tickInterval) {
+      clearInterval(tickInterval);
+      tickInterval = null;
+    }
+    const server = wss;
+    wss = null;
+    if (server) {
+      server.close();
+    }
+  }
+
   return {
     name: 'class-feud-team-buttons',
     configureServer() {
@@ -76,6 +127,12 @@ export function teamButtonWsPlugin(): Plugin {
     },
     configurePreviewServer() {
       start();
+    },
+    closeServer() {
+      stop();
+    },
+    closePreviewServer() {
+      stop();
     },
   };
 }
