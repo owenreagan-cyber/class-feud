@@ -7,6 +7,8 @@ export type TeamButtonHost = {
   connectedTeamIds: string[];
   session: FaceOffPublicState | null;
   error: string | null;
+  /** True once another device has taken over the host role; this one is no longer authoritative. */
+  demoted: boolean;
   startSession: (kind: SessionKind, thinkSeconds: number, eligibleTeamIds: string[]) => void;
   resolveSession: () => void;
   resetButtons: () => void;
@@ -21,6 +23,7 @@ export function useTeamButtonHost(teamInfos: TeamInfo[]): TeamButtonHost {
   const [connectedTeamIds, setConnectedTeamIds] = useState<string[]>([]);
   const [session, setSession] = useState<FaceOffPublicState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [demoted, setDemoted] = useState(false);
 
   const teamInfosRef = useRef(teamInfos);
 
@@ -37,6 +40,10 @@ export function useTeamButtonHost(teamInfos: TeamInfo[]): TeamButtonHost {
     },
     onMessage: (message) => {
       switch (message.type) {
+        case 'welcome':
+          // A successful host welcome means this device is (again) authoritative.
+          if (message.role === 'host') setDemoted(false);
+          break;
         case 'teamsConfig':
           setConnectedTeamIds(message.connectedTeamIds);
           break;
@@ -45,6 +52,9 @@ export function useTeamButtonHost(teamInfos: TeamInfo[]): TeamButtonHost {
           break;
         case 'error':
           setError(message.message);
+          break;
+        case 'demoted':
+          setDemoted(true);
           break;
         default:
           break;
@@ -70,5 +80,5 @@ export function useTeamButtonHost(teamInfos: TeamInfo[]): TeamButtonHost {
   const resolveSession = () => send({ type: 'resolve' });
   const resetButtons = () => send({ type: 'reset' });
 
-  return { status, connectedTeamIds, session, error, startSession, resolveSession, resetButtons };
+  return { status, connectedTeamIds, session, error, demoted, startSession, resolveSession, resetButtons };
 }

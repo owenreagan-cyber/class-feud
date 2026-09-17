@@ -65,7 +65,9 @@ export type ServerMessage =
     }
   | { type: 'teamsConfig'; teams: TeamInfo[]; connectedTeamIds: string[] }
   | { type: 'session'; session: FaceOffPublicState }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  /** Sent to a host client when a different device takes over the host role. */
+  | { type: 'demoted' };
 
 // ------------------------------------------------------------------ config --
 

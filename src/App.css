@@ -1841,6 +1841,25 @@ textarea.field-input {
   font-size: 14px;
 }
 
+.tb-demoted {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-weight: 700;
+  text-align: center;
+}
+
+.tb-demoted-detail {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 14px;
+}
+
 .tb-join-error {
   color: var(--danger);
   font-size: 16px;

@@ -104,7 +104,10 @@ export class TeamButtonRoom {
           // stale teams normally.
           if (this.hostId !== null && this.hostId !== client.id) {
             const old = this.clients.get(this.hostId);
-            if (old) old.role = 'team';
+            if (old) {
+              old.role = 'team';
+              old.send({ type: 'demoted' });
+            }
           }
           this.hostId = client.id;
           this.machine = createIdleFaceOff();

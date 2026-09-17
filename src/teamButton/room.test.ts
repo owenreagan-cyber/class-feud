@@ -268,6 +268,22 @@ describe('TeamButtonRoom', () => {
     expect(room.isThinking()).toBe(false);
   });
 
+  it('notifies the replaced old host that it has been demoted', () => {
+    const { room, host } = setupWithKey('teacher');
+    expect(last(host, 'demoted')).toBeUndefined();
+    const secondHost = makeClient(room);
+    room.handleMessage(secondHost.id, { type: 'hello', role: 'host', hostKey: 'teacher' });
+    expect(last(host, 'demoted')).toBeDefined();
+    // The new host itself never receives a demoted notice.
+    expect(last(secondHost, 'demoted')).toBeUndefined();
+  });
+
+  it('a rejected host hello does not demote or notify the valid existing host', () => {
+    const { room, host } = setupWithKey('teacher');
+    room.handleMessage(makeClient(room).id, { type: 'hello', role: 'host', hostKey: 'wrong' });
+    expect(last(host, 'demoted')).toBeUndefined();
+  });
+
   it('preserves configured teams across host replacement', () => {
     const { room } = setupWithKey('teacher');
     join(room, 'team-red');

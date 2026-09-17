@@ -68,6 +68,24 @@ export default function TeamButtonPanel({
     host.resolveSession();
   };
 
+  if (host.demoted) {
+    return (
+      <section className="tb-panel" aria-label="Team Buttons">
+        <div className="tb-panel-header">
+          <h3>TEAM BUTTONS</h3>
+        </div>
+        <div className="tb-demoted" role="alert">
+          TEACHER CONTROL MOVED TO ANOTHER DEVICE
+          <span className="tb-demoted-detail">
+            Another device opened the teacher host URL and is now controlling Team Buttons. This
+            window is no longer authoritative — close it or reopen the teacher URL to take control
+            back.
+          </span>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="tb-panel" aria-label="Team Buttons">
       <div className="tb-panel-header">
