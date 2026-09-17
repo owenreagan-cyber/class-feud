@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import { useTeamButtonClient } from './useTeamButtonClient';
 import { deriveTeamButtonState } from './teamDeviceState';
-import { playFirstPress, playReadyDing } from './audio';
+import { playFirstPress, playReadyDing, unlockAudio } from './audio';
 import type { TeamInfo } from './protocol';
 
 /**
@@ -85,7 +85,12 @@ function JoinScreen({
               type="button"
               className="tb-join-button"
               disabled={taken}
-              onClick={() => onJoin(team.id)}
+              onClick={() => {
+                // Real user gesture: the first (and most reliable) place to
+                // create/unlock the shared AudioContext on iOS Safari.
+                unlockAudio();
+                onJoin(team.id);
+              }}
               style={{ '--team-color': team.color } as CSSProperties}
             >
               <span className="tb-join-dot" aria-hidden="true" />
@@ -136,8 +141,12 @@ function TeamButtonView({
     // during LOCKED/THINKING, after our own press, and when ineligible.
     if (!state.canPress || pressedRef.current || !session?.sessionId) return;
     pressedRef.current = true;
-    playFirstPress();
+    // Press order matters more than sound: send first. Audio calls below are
+    // synchronous/non-blocking (never awaited) regardless, but sending first
+    // keeps that guarantee obvious even if the audio path changes later.
     onPress(session.sessionId);
+    unlockAudio();
+    playFirstPress();
   };
 
   const headline = () => {

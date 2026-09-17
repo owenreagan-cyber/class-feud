@@ -54,7 +54,10 @@ students in 4 teams.
    **Track 1 — Track Out Edition**, set up **4 teams** (RED, BLUE, GREEN,
    GOLD), and start the game.
 
-4. **Connect up to four iPads.** On each iPad open:
+4. **Connect up to four iPads.** On each iPad, first turn the **ringer/silent
+   switch OFF and volume up** — iOS mutes Web Audio (the READY ding and press
+   sound) whenever the switch is in silent mode, regardless of in-app volume
+   or code. Then open:
 
    ```
    http://<host-address>/team-button
@@ -62,6 +65,8 @@ students in 4 teams.
 
    Then tap the team name to join. No login, no names, no roster. Student
    devices use this `/team-button` path and do **not** add the `?host=` query.
+   Tapping the team name is also what unlocks sound on that device — it must
+   happen before the first face-off for the READY ding to play.
 
 5. **Test one face-off.** From the teacher panel, open **TEAM BUTTONS**,
    press **START FACE-OFF**, confirm the countdown (3…2…1), then have each

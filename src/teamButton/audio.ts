@@ -1,26 +1,51 @@
 // Lightweight Web Audio "ding" / confirmation for Team Buttons. No audio
 // assets, no loops, no loud tones. Respects browser autoplay restrictions:
 // every sound is triggered by a user gesture and fails silently otherwise.
+//
+// iOS Safari only creates/resumes an AudioContext synchronously inside a real
+// user-gesture event handler; a context first created later (e.g. from a
+// state-change effect) is created suspended and stays that way for the life
+// of the page. `unlockAudio` exists specifically to be called from such a
+// gesture (team join tap, button press) so the context is always created (or
+// resumed) at a point iOS is willing to honor. `tone` never creates the
+// context itself — it only ever plays through whatever `unlockAudio` already
+// set up, so a missed/failed unlock degrades to silence, never an error.
 
 let audioContext: AudioContext | null = null;
 
-function getContext(): AudioContext | null {
+function getAudioContextConstructor(): typeof AudioContext | null {
+  return (
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ??
+    null
+  );
+}
+
+/**
+ * Create the shared AudioContext if it doesn't exist yet, and resume it if
+ * it's suspended (iOS can re-suspend an existing context, e.g. after the
+ * page is backgrounded). Call this synchronously from every real user
+ * gesture that could plausibly be the first one (team join) or a later one
+ * (button press) — it is a safe no-op if the context already exists and is
+ * running, and never throws or rejects into the caller.
+ */
+export function unlockAudio(): void {
   try {
     if (!audioContext) {
-      const Ctor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctor) return null;
+      const Ctor = getAudioContextConstructor();
+      if (!Ctor) return;
       audioContext = new Ctor();
     }
-    return audioContext;
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().catch(() => {});
+    }
   } catch {
-    return null;
+    // Audio is best-effort; never throw during gameplay.
   }
 }
 
 function tone(frequency: number, duration: number, delay = 0): void {
-  const context = getContext();
+  const context = audioContext;
   if (!context) return;
   try {
     if (context.state === 'suspended') {
