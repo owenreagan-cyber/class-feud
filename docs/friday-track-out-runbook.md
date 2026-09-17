@@ -26,9 +26,21 @@ students in 4 teams.
 
    Leave this process running. It serves the app AND the Team Buttons server.
 
-2. **Confirm the local address.** Read the `Network:` line printed by Vite
-   (e.g. `http://192.168.1.20:5173/`). All iPads and the teacher browser use
-   this address on the same Wi-Fi network.
+2. **Confirm the local address.** In a second terminal, run:
+
+   ```bash
+   ipconfig getifaddr en0
+   ```
+
+   This prints the Mac's actual Wi-Fi IP address directly (e.g.
+   `192.168.1.20`). Use this address, not the `Network:` lines Vite prints at
+   startup — if VPN software or other network tools are running, Vite lists
+   every active interface (VPN/tunnel addresses included), and picking the
+   wrong one produces a URL the iPads can't reach even though the app looks
+   like it started fine. `en0` is the Wi-Fi hardware port on virtually all
+   Macs; confirm with `networksetup -listallhardwareports` if unsure. All
+   iPads and the teacher browser use `http://<that-address>:5173/...` on the
+   same Wi-Fi network.
 
 3. **Open the teacher view** in a browser at:
 
@@ -110,10 +122,11 @@ game state are never affected. Just press START FACE-OFF / START STEAL again.
 
 ## TROUBLESHOOTING
 
-- **Wrong port / page won't load:** always read the `Network:` line Vite
-  prints at startup (e.g. `http://192.168.4.47:5173/`). If port `5173` is
-  already in use, Vite picks the next free port (e.g. `5175`) and prints it.
-  Use whatever port is printed; do not assume `5173`.
+- **Wrong port / page won't load:** get the IP from `ipconfig getifaddr en0`
+  (step 2 above), not from Vite's printed `Network:` lines. For the *port*,
+  check the terminal: if `5173` is already in use, Vite picks the next free
+  port (e.g. `5175`) and prints it. Use whatever port is printed; do not
+  assume `5173`.
 - **Team Buttons stuck on RECONNECTING / CONNECTING:** the Team Buttons
   WebSocket server (port `5174`) could not start — usually because another
   program is using that port, or the iPad network cannot reach the host. The
