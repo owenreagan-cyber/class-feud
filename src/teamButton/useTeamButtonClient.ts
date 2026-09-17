@@ -24,6 +24,10 @@ export function useTeamButtonClient(): TeamButtonClient {
       return null;
     }
   });
+  // Tracks a join we've optimistically applied locally but the server hasn't
+  // confirmed yet, so a rejection can roll back to the prior team (if any)
+  // instead of leaving the UI stuck showing a team we don't actually control.
+  const pendingJoinRef = useRef<{ attempted: string; previous: string | null } | null>(null);
   const [teamConfig, setTeamConfig] = useState<TeamInfo[]>([]);
   const [connectedTeamIds, setConnectedTeamIds] = useState<string[]>([]);
   const [session, setSession] = useState<FaceOffPublicState | null>(null);
@@ -68,6 +72,7 @@ export function useTeamButtonClient(): TeamButtonClient {
           break;
         case 'welcome':
           if (message.teamId) {
+            pendingJoinRef.current = null;
             setMyTeamId(message.teamId);
             try {
               sessionStorage.setItem(TEAM_STORAGE_KEY, message.teamId);
@@ -78,6 +83,20 @@ export function useTeamButtonClient(): TeamButtonClient {
           break;
         case 'error':
           setError(message.message);
+          // Roll back an optimistic team claim the server just rejected (e.g. a
+          // duplicate device racing another for the same team) so the button
+          // doesn't look stuck on a team we don't actually control.
+          if (pendingJoinRef.current) {
+            const { previous } = pendingJoinRef.current;
+            pendingJoinRef.current = null;
+            setMyTeamId(previous);
+            try {
+              if (previous) sessionStorage.setItem(TEAM_STORAGE_KEY, previous);
+              else sessionStorage.removeItem(TEAM_STORAGE_KEY);
+            } catch {
+              // storage unavailable — still works for this session
+            }
+          }
           break;
         default:
           break;
@@ -86,6 +105,7 @@ export function useTeamButtonClient(): TeamButtonClient {
   });
 
   const joinTeam = (teamId: string) => {
+    pendingJoinRef.current = { attempted: teamId, previous: myTeamIdRef.current };
     setMyTeamId(teamId);
     try {
       sessionStorage.setItem(TEAM_STORAGE_KEY, teamId);

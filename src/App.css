@@ -1823,6 +1823,12 @@ textarea.field-input {
   font-size: 14px;
 }
 
+.tb-join-error {
+  color: var(--danger);
+  font-size: 16px;
+  text-align: center;
+}
+
 /* ---- Extra-time UI (game over) ---- */
 
 .extra-time {

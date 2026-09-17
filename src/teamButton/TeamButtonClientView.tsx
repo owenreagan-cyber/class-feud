@@ -12,7 +12,7 @@ import type { TeamInfo } from './protocol';
  */
 export default function TeamButtonClientView() {
   const client = useTeamButtonClient();
-  const { status, myTeamId, teamConfig, connectedTeamIds, session } = client;
+  const { status, myTeamId, teamConfig, connectedTeamIds, session, error } = client;
 
   if (status !== 'open') {
     return (
@@ -26,7 +26,14 @@ export default function TeamButtonClientView() {
   }
 
   if (myTeamId === null) {
-    return <JoinScreen teams={teamConfig} connectedTeamIds={connectedTeamIds} onJoin={client.joinTeam} />;
+    return (
+      <JoinScreen
+        teams={teamConfig}
+        connectedTeamIds={connectedTeamIds}
+        onJoin={client.joinTeam}
+        error={error}
+      />
+    );
   }
 
   const myTeam = teamConfig.find((team) => team.id === myTeamId);
@@ -44,10 +51,12 @@ function JoinScreen({
   teams,
   connectedTeamIds,
   onJoin,
+  error,
 }: {
   teams: TeamInfo[];
   connectedTeamIds: string[];
   onJoin: (teamId: string) => void;
+  error: string | null;
 }) {
   if (teams.length === 0) {
     return (
@@ -62,6 +71,11 @@ function JoinScreen({
   return (
     <div className="tb-screen">
       <h1 className="tb-join-title">JOIN A TEAM</h1>
+      {error && (
+        <p className="tb-join-error" role="alert">
+          {error}
+        </p>
+      )}
       <div className="tb-join-grid">
         {teams.map((team) => {
           const taken = connectedTeamIds.includes(team.id);
