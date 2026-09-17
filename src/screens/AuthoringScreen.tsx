@@ -170,6 +170,17 @@ export default function AuthoringScreen({ setId, onReturn }: Props) {
     return { ...base, brainBlitz: base.brainBlitz ?? createDefaultBrainBlitzConfig() };
   });
   const [editingRoundId, setEditingRoundId] = useState<string | null>(draft.rounds[0]?.id ?? null);
+  // Snapshot of the last-saved (or initially-loaded) draft, to detect unsaved
+  // edits before a navigation away would silently discard them.
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(() => JSON.stringify(draft));
+  const isDirty = JSON.stringify(draft) !== savedSnapshot;
+
+  function returnToLibrary() {
+    if (isDirty && !window.confirm('Discard unsaved changes and return to the library?')) {
+      return;
+    }
+    onReturn();
+  }
 
   const issues = validateGameSet(draft);
   const errors = issues.filter((issue) => issue.severity === 'error');
@@ -264,6 +275,7 @@ export default function AuthoringScreen({ setId, onReturn }: Props) {
     const updated: SavedGameSet = { ...draft, updatedAt: new Date().toISOString() };
     saveGameSet(updated);
     setDraft(updated);
+    setSavedSnapshot(JSON.stringify(updated));
     if (andReturn) onReturn();
   }
 
@@ -274,7 +286,7 @@ export default function AuthoringScreen({ setId, onReturn }: Props) {
           <h1 className="authoring-title">Game Authoring</h1>
           <p className="authoring-subtitle">Create and edit a Class Feud game set.</p>
         </div>
-        <button type="button" onClick={onReturn}>
+        <button type="button" onClick={returnToLibrary}>
           ← Back to Library
         </button>
       </header>
@@ -494,7 +506,7 @@ export default function AuthoringScreen({ setId, onReturn }: Props) {
       ) : null}
 
       <footer className="authoring-footer">
-        <button type="button" onClick={() => onReturn()}>
+        <button type="button" onClick={returnToLibrary}>
           Cancel
         </button>
         <button
