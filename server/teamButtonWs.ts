@@ -8,6 +8,13 @@ import {
 } from './heartbeat.ts';
 import type { HeartbeatClient } from './heartbeat.ts';
 
+// Accidental host-role takeover guard (NOT authentication): the teacher host
+// supplies this value in the URL query (`?host=teacher`) and the room only
+// accepts a host `hello` whose `hostKey` matches. Any LAN peer can read it, so
+// it does not authenticate anyone or act as a security credential/login — it
+// only stops a student device from accidentally claiming the host role.
+const TEACHER_HOST_KEY = process.env.CLASS_FEUD_HOST_KEY ?? 'teacher';
+
 /**
  * Vite plugin that runs the local Team Buttons WebSocket server alongside the
  * dev/preview HTTP server. One command (`npm run dev -- --host`) serves both
@@ -19,7 +26,7 @@ export function teamButtonWsPlugin(
 ): Plugin {
   const heartbeatIntervalMs =
     options.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS;
-  const room = new TeamButtonRoom();
+  const room = new TeamButtonRoom(() => Date.now(), TEACHER_HOST_KEY);
   const heartbeatClients = new Set<HeartbeatClient>();
 
   let tickInterval: ReturnType<typeof setInterval> | null = null;

@@ -33,9 +33,16 @@ export class TeamButtonRoom {
   private teams: TeamInfo[] = [];
   private machine: FaceOffState = createIdleFaceOff();
   private readonly now: () => number;
+  // Optional shared secret used ONLY as an accidental host-role takeover
+  // guard. It is NOT authentication or a security credential: any client on
+  // the LAN can read it, so it just prevents a student device from
+  // accidentally claiming the host role. `null` disables the guard (tests and
+  // default behavior).
+  private readonly hostKey: string | null;
 
-  constructor(now: () => number = () => Date.now()) {
+  constructor(now: () => number = () => Date.now(), hostKey: string | null = null) {
     this.now = now;
+    this.hostKey = hostKey;
   }
 
   /** Register a new connection; returns its client id. Role is set by `hello`. */
@@ -78,19 +85,28 @@ export class TeamButtonRoom {
   private dispatch(client: RoomClient, message: ClientMessage): void {
     switch (message.type) {
       case 'hello': {
+        if (
+          message.role === 'host' &&
+          this.hostKey !== null &&
+          message.hostKey !== this.hostKey
+        ) {
+          // Reject the accidental/unauthorized host claim without touching
+          // this client's role or the current host's authority. The existing
+          // valid host (if any) stays authoritative.
+          client.send({ type: 'error', message: 'Host key mismatch.' });
+          return;
+        }
         client.role = message.role;
         if (message.role === 'host') {
-          // A (re)connecting host starts a fresh button session: drop stale
-          // team associations from any prior game and reset the machine.
+          // A (re)connecting host takes over: demote the previous host and
+          // reset only the transient button session. Configured teams and any
+          // live team-client joins are preserved; a later `setTeams` prunes
+          // stale teams normally.
           if (this.hostId !== null && this.hostId !== client.id) {
             const old = this.clients.get(this.hostId);
             if (old) old.role = 'team';
           }
           this.hostId = client.id;
-          this.teams = [];
-          for (const existing of this.clients.values()) {
-            if (existing.role === 'team') existing.teamId = null;
-          }
           this.machine = createIdleFaceOff();
         }
         client.send({

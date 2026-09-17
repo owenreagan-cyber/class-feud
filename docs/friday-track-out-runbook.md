@@ -30,7 +30,15 @@ students in 4 teams.
    (e.g. `http://192.168.1.20:5173/`). All iPads and the teacher browser use
    this address on the same Wi-Fi network.
 
-3. **Open the teacher view** in a browser at the host address, choose
+3. **Open the teacher view** in a browser at:
+
+   ```
+   http://<host-address>/?host=teacher
+   ```
+
+   The `?host=teacher` value is an **accidental host-role takeover guard**,
+   not authentication — it just stops a student device from accidentally
+   claiming the teacher's host role (anyone on the LAN can read it). Choose
    **Track 1 — Track Out Edition**, set up **4 teams** (RED, BLUE, GREEN,
    GOLD), and start the game.
 
@@ -40,7 +48,8 @@ students in 4 teams.
    http://<host-address>/team-button
    ```
 
-   Then tap the team name to join. No login, no names, no roster.
+   Then tap the team name to join. No login, no names, no roster. Student
+   devices use this `/team-button` path and do **not** add the `?host=` query.
 
 5. **Test one face-off.** From the teacher panel, open **TEAM BUTTONS**,
    press **START FACE-OFF**, confirm the countdown (3…2…1), then have each
@@ -89,6 +98,13 @@ students in 4 teams.
 
 If an iPad disconnects mid-round it shows RECONNECTING and re-joins when it
 returns. The game never depends on a device staying connected.
+
+If the **teacher's own device** briefly drops Wi-Fi during a live face-off or
+steal window, the header will flash RECONNECTING and the button session resets
+to not-live once it reconnects (any in-progress press order is lost). Existing
+**team joins survive** — iPads stay on their teams and do not need to re-join.
+This is a Team Buttons display reset only — scores, strikes, and the official
+game state are never affected. Just press START FACE-OFF / START STEAL again.
 
 ---
 

@@ -71,7 +71,20 @@ export function useTeamButtonConnection(options: {
         }
         attempts = 0;
         setStatus('open');
-        socket.send(JSON.stringify({ type: 'hello', role: options.role }));
+        // The teacher host sends an optional `host` query value as an
+        // accidental host-role takeover guard (NOT authentication). Team
+        // clients never send it.
+        const hello: ClientMessage =
+          options.role === 'host'
+            ? {
+                type: 'hello',
+                role: options.role,
+                hostKey:
+                  new URLSearchParams(window.location.search).get('host') ??
+                  undefined,
+              }
+            : { type: 'hello', role: options.role };
+        socket.send(JSON.stringify(hello));
         onOpenRef.current(send);
       };
 

@@ -47,7 +47,7 @@ export type FaceOffPublicState = {
 // ----------------------------------------------------------------- messages --
 
 export type ClientMessage =
-  | { type: 'hello'; role: Role }
+  | { type: 'hello'; role: Role; hostKey?: string }
   | { type: 'join'; teamId: string }
   | { type: 'press'; sessionId: string }
   | { type: 'start'; kind: SessionKind; thinkSeconds: number; eligibleTeamIds: string[] }
@@ -102,10 +102,11 @@ function isStringArray(value: unknown): value is string[] {
 export function parseClientMessage(value: unknown): ClientMessage | null {
   if (!isRecord(value) || typeof value.type !== 'string') return null;
   switch (value.type) {
-    case 'hello':
-      return value.role === 'host' || value.role === 'team'
-        ? { type: 'hello', role: value.role }
-        : null;
+    case 'hello': {
+      if (value.role !== 'host' && value.role !== 'team') return null;
+      if (value.hostKey !== undefined && typeof value.hostKey !== 'string') return null;
+      return { type: 'hello', role: value.role, hostKey: value.hostKey };
+    }
     case 'join':
       return typeof value.teamId === 'string' && value.teamId !== ''
         ? { type: 'join', teamId: value.teamId }
