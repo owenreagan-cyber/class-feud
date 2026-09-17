@@ -315,6 +315,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
         !!target &&
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
           target.isContentEditable);
       if (isTyping) return;
 
@@ -685,7 +686,15 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
               >
                 Play Again
               </button>
-              <button onClick={() => dispatch({ type: 'RESET_GAME' })}>End Game</button>
+              <button
+                onClick={() => {
+                  if (window.confirm('End the game and return to setup? Progress will be lost.')) {
+                    dispatch({ type: 'RESET_GAME' });
+                  }
+                }}
+              >
+                End Game
+              </button>
             </div>
           </ConsoleSection>
         )}
@@ -695,7 +704,14 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
         <button disabled={!canUndo} onClick={() => dispatch({ type: 'UNDO' })}>
           Undo
         </button>
-        <button className="danger" onClick={() => dispatch({ type: 'RESET_GAME' })}>
+        <button
+          className="danger"
+          onClick={() => {
+            if (window.confirm('Reset the game? All progress will be lost.')) {
+              dispatch({ type: 'RESET_GAME' });
+            }
+          }}
+        >
           Reset Game
         </button>
       </div>

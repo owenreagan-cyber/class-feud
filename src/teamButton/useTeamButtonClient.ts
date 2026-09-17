@@ -43,11 +43,25 @@ export function useTeamButtonClient(): TeamButtonClient {
       const teamId = myTeamIdRef.current;
       if (teamId) sendOnOpen({ type: 'join', teamId });
     },
-    onMessage: (message) => {
+    onMessage: (message, sendOnMessage) => {
       switch (message.type) {
         case 'teamsConfig':
           setTeamConfig(message.teams);
           setConnectedTeamIds(message.connectedTeamIds);
+          // Recover a lost association (e.g. the host refreshed and the server
+          // reset team links). Only re-join when our team still exists in the
+          // runtime config but the server no longer lists it as connected — and
+          // only after the host has repopulated teams (avoids an empty-teams race).
+          {
+            const stored = myTeamIdRef.current;
+            if (
+              stored &&
+              !message.connectedTeamIds.includes(stored) &&
+              message.teams.some((team) => team.id === stored)
+            ) {
+              sendOnMessage({ type: 'join', teamId: stored });
+            }
+          }
           break;
         case 'session':
           setSession(message.session);

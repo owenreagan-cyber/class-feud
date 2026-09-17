@@ -8,6 +8,11 @@ students in 4 teams.
 > without any iPads using manual face-off control. If networking fails at any
 > point, switch to manual control and keep playing.
 
+> **Team Buttons require the dev server.** They run on a local WebSocket
+> server that `npm run dev` starts alongside the app. Opening a static build
+> (`dist/index.html`) will **not** provide Team Buttons. Always start the host
+> with `npm run dev -- --host`.
+
 ---
 
 ## BEFORE CLASS

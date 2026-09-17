@@ -87,9 +87,17 @@ function resetRound(state: GameState): GameState {
 /**
  * Enter the steal phase. Auto-select the opponent only when there is exactly
  * one eligible team (a two-team match); otherwise the teacher must choose.
+ *
+ * When NO team is eligible to steal (every opponent was marked NO ANSWER), the
+ * controlling team keeps the round rather than entering a dead-end steal phase
+ * with no selectable team. This mirrors the "steal failed" outcome.
  */
 function enterSteal(state: GameState): GameState {
   const eligible = getEligibleStealTeams(state);
+  if (eligible.length === 0) {
+    if (state.activeTeamId === null) return state;
+    return awardRound(state, state.activeTeamId, getRoundValue(state));
+  }
   const stealTeamId = eligible.length === 1 ? eligible[0].id : null;
   return { ...state, phase: 'steal', stealTeamId };
 }
