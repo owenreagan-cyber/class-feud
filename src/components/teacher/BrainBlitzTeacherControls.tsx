@@ -415,7 +415,7 @@ export default function BrainBlitzTeacherControls({ state, dispatch }: Props) {
     const total = getBrainBlitzTotalScore(state);
     const achieved = getBrainBlitzAchieved(state);
     return (
-      <Section title="Brain Blitz results">
+      <Section title={blitz.exhibition ? 'Exhibition Brain Blitz results' : 'Brain Blitz results'}>
         <div className="console-hint">
           {blitz.playerMode === 'two' ? (
             <>
@@ -431,7 +431,7 @@ export default function BrainBlitzTeacherControls({ state, dispatch }: Props) {
         </div>
         <div className="button-row">
           <button className="primary" onClick={() => dispatch({ type: 'BRAIN_BLITZ_EXIT' })}>
-            End Game
+            Back to Results
           </button>
         </div>
       </Section>

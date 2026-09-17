@@ -304,12 +304,6 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
       // During Brain Blitz the dedicated controls own the keyboard.
       if (phase === 'brainBlitz') return;
 
-      if (event.key === 'Escape') {
-        setGuess('');
-        setMatch(null);
-        return;
-      }
-
       const target = event.target as HTMLElement | null;
       const isTyping =
         !!target &&
@@ -318,6 +312,12 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
           target.tagName === 'SELECT' ||
           target.isContentEditable);
       if (isTyping) return;
+
+      if (event.key === 'Escape') {
+        setGuess('');
+        setMatch(null);
+        return;
+      }
 
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
@@ -572,7 +572,12 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
               >
                 Next Round
               </button>
-              <button onClick={() => dispatch({ type: 'END_GAME' })}>End Game</button>
+              <button
+                onClick={() => dispatch({ type: 'END_GAME' })}
+                title="Skip any remaining rounds and go straight to the final score. Scores are kept; this does not reset the game."
+              >
+                Skip to Final Score
+              </button>
             </div>
           </ConsoleSection>
         )}

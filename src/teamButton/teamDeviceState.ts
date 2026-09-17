@@ -15,18 +15,30 @@ export type TeamButtonViewState = {
   canPress: boolean;
   /** Seconds remaining in the think countdown (null unless `thinking`). */
   countdown: number | null;
+  /**
+   * Presentation-only flag: true when the live session is a steal, for
+   * labeling purposes. Derived independently of `kind`/`canPress` and never
+   * consulted by eligibility or press logic.
+   */
+  isSteal: boolean;
 };
+
+type CoreViewState = Omit<TeamButtonViewState, 'isSteal'>;
 
 /**
  * Derive the team device's button state from the server-broadcast session.
  * The server is the authority: a press is only ever legal when this returns
  * `canPress: true`, which requires a live `ready` session with the team
  * eligible and not already pressed.
+ *
+ * `isSteal` is spliced on afterward from `session.kind` alone, entirely
+ * independent of this core derivation, so labeling a session as a steal can
+ * never influence eligibility, press-order, or `canPress`.
  */
-export function deriveTeamButtonState(
+function deriveCoreViewState(
   session: FaceOffPublicState | null,
   teamId: string,
-): TeamButtonViewState {
+): CoreViewState {
   if (!session || session.sessionId === null || session.phase === 'idle') {
     return { kind: 'locked', canPress: false, countdown: null };
   }
@@ -52,4 +64,14 @@ export function deriveTeamButtonState(
     default:
       return { kind: 'locked', canPress: false, countdown: null };
   }
+}
+
+export function deriveTeamButtonState(
+  session: FaceOffPublicState | null,
+  teamId: string,
+): TeamButtonViewState {
+  return {
+    ...deriveCoreViewState(session, teamId),
+    isSteal: session?.kind === 'steal',
+  };
 }

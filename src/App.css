@@ -1273,6 +1273,14 @@ textarea.field-input {
   line-height: 1;
 }
 
+.bb-exhibition-tag {
+  font-size: clamp(14px, 2vw, 22px);
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
 .bb-presenter-finalist {
   font-size: 26px;
   color: var(--muted);
@@ -1524,6 +1532,16 @@ textarea.field-input {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+.tb-steal-badge {
+  font-size: clamp(16px, 3vw, 24px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  padding: 4px 16px;
 }
 
 .tb-headline {

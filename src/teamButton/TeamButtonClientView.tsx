@@ -188,6 +188,9 @@ function TeamButtonView({
       </div>
 
       <div className="tb-state" role="status" aria-live="polite">
+        {state.isSteal && (state.kind === 'thinking' || state.kind === 'ready' || state.kind === 'first') && (
+          <span className="tb-steal-badge">STEAL CHANCE</span>
+        )}
         {state.kind === 'thinking' ? (
           <div className="tb-countdown" aria-label={`${state.countdown} seconds`}>
             {state.countdown}

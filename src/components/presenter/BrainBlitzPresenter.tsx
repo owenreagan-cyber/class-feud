@@ -65,7 +65,10 @@ export default function BrainBlitzPresenter({ state }: { state: GameState }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <span className="bb-presenter-title">Brain Blitz</span>
+        <span className="bb-presenter-title">
+          Brain Blitz
+          {blitz.exhibition && <span className="bb-exhibition-tag"> — EXHIBITION</span>}
+        </span>
         {finalist && <span className="bb-presenter-finalist">{finalist.name}</span>}
       </motion.div>
 
@@ -121,7 +124,9 @@ export default function BrainBlitzPresenter({ state }: { state: GameState }) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
         >
-          <span className="result-kicker">Brain Blitz results</span>
+          <span className="result-kicker">
+            {blitz.exhibition ? 'Exhibition Brain Blitz results' : 'Brain Blitz results'}
+          </span>
 
           {blitz.playerMode === 'two' ? (
             <div className="bb-result-scores">
