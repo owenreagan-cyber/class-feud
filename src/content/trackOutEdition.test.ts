@@ -98,6 +98,16 @@ describe('Track Out Edition content', () => {
     expect(dupes).toEqual([]);
   });
 
+  it('does not alias Soccer to kickball (a different game)', () => {
+    const recess = set.rounds.find((round) => round.id === 'to-recess');
+    const soccer = recess?.answers.find((answer) => answer.id === 'to-recess-soccer');
+    expect(soccer?.aliases).not.toContain('kickball');
+
+    const recessBlitz = set.brainBlitz?.questions.find((question) => question.id === 'tob-recess');
+    const blitzSoccer = recessBlitz?.answers.find((answer) => answer.id === 'tob-r-soccer');
+    expect(blitzSoccer?.aliases).not.toContain('kickball');
+  });
+
   it('duplicating preserves default-round selection with new ids', () => {
     const copy = duplicateGameSet(set);
     expect(copy.defaultRoundIds).toHaveLength(TRACK_OUT_DEFAULT_ROUND_IDS.length);

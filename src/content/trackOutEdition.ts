@@ -44,7 +44,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
   board('to-recess', 'Recess Favorites', 'Recess', 'Name a favorite recess activity.', [
     a('to-recess-tag', 'Tag', 35, ['chase']),
     a('to-recess-swings', 'Swings', 30, ['swinging']),
-    a('to-recess-soccer', 'Soccer', 20, ['kickball']),
+    a('to-recess-soccer', 'Soccer', 20),
     a('to-recess-basketball', 'Basketball', 10, ['hoops']),
     a('to-recess-slides', 'Slides', 5, ['sliding']),
   ]),
@@ -212,7 +212,7 @@ const TRACK_OUT_BLITZ: BrainBlitzConfig = {
     blitzQuestion('tob-recess', 'Recess', 'Name a recess activity.', [
       blitzAnswer('tob-r-tag', 'Tag', 35, ['chase']),
       blitzAnswer('tob-r-swings', 'Swings', 30, ['swinging']),
-      blitzAnswer('tob-r-soccer', 'Soccer', 20, ['kickball']),
+      blitzAnswer('tob-r-soccer', 'Soccer', 20),
       blitzAnswer('tob-r-basketball', 'Basketball', 10, ['hoops']),
       blitzAnswer('tob-r-slides', 'Slides', 5),
     ]),
