@@ -1,4 +1,4 @@
-import { MAX_STRIKES, MIN_TEAMS } from './gameTypes';
+import { MAX_STRIKES, MAX_TEAMS, MIN_TEAMS } from './gameTypes';
 import type { FeudAnswer, FeudRound, GamePhase, GameState, Multiplier } from './gameTypes';
 
 export const STORAGE_KEY = 'class-feud.game-state';
@@ -131,12 +131,13 @@ function isValidBrainBlitzResponse(value: unknown): boolean {
   );
 }
 
-function isValidBrainBlitzState(value: unknown): boolean {
+function isValidBrainBlitzState(value: unknown, teamIds: Set<string>): boolean {
   if (!isRecord(value)) return false;
   if (!VALID_BRAIN_BLITZ_STATUSES.includes(value.status as (typeof VALID_BRAIN_BLITZ_STATUSES)[number])) {
     return false;
   }
   if (value.finalistTeamId !== null && typeof value.finalistTeamId !== 'string') return false;
+  if (typeof value.finalistTeamId === 'string' && !teamIds.has(value.finalistTeamId)) return false;
   if (value.playerMode !== 'one' && value.playerMode !== 'two') return false;
   if (value.currentPlayer !== 1 && value.currentPlayer !== 2) return false;
   if (!isNonNegativeInteger(value.currentQuestionIndex)) return false;
@@ -164,7 +165,12 @@ function isValidGameState(value: unknown): value is GameState {
   if (!VALID_PHASES.includes(phase as GamePhase)) return false;
 
   const teams = value.teams;
-  if (!Array.isArray(teams) || teams.length < MIN_TEAMS || !teams.every(isValidTeam)) {
+  if (
+    !Array.isArray(teams) ||
+    teams.length < MIN_TEAMS ||
+    teams.length > MAX_TEAMS ||
+    !teams.every(isValidTeam)
+  ) {
     return false;
   }
   const teamIds = new Set((teams as Array<{ id: string }>).map((team) => team.id));
@@ -220,7 +226,7 @@ function isValidGameState(value: unknown): value is GameState {
   }
 
   const brainBlitz = value.brainBlitz;
-  if (brainBlitz !== null && brainBlitz !== undefined && !isValidBrainBlitzState(brainBlitz)) {
+  if (brainBlitz !== null && brainBlitz !== undefined && !isValidBrainBlitzState(brainBlitz, teamIds)) {
     return false;
   }
 

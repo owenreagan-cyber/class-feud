@@ -198,6 +198,73 @@ describe('game persistence', () => {
     expect(loadPersistedState()).toBeNull();
   });
 
+  it('rejects a team roster larger than the maximum team count', () => {
+    storedRaw(
+      makeStorage(),
+      corrupt((state) => {
+        state.teams.push(
+          { id: 'team-green', name: 'Team 3', color: '#22c55e', score: 0 },
+          { id: 'team-gold', name: 'Team 4', color: '#eab308', score: 0 },
+          { id: 'team-extra', name: 'Team 5', color: '#a855f7', score: 0 },
+        );
+      }),
+    );
+    expect(loadPersistedState()).toBeNull();
+  });
+
+  it('rejects a Brain Blitz finalist referencing a team not in the roster', () => {
+    let s = gameReducer(createInitialState(), {
+      type: 'LOAD_GAME_ROUNDS',
+      roundLibrary: [
+        {
+          id: 'r1',
+          title: 'T',
+          category: 'C',
+          prompt: 'P',
+          multiplier: 1,
+          answers: [{ id: 'a1', text: 'Answer', aliases: [], points: 35, revealed: false }],
+        },
+      ],
+      rounds: [
+        {
+          id: 'r1',
+          title: 'T',
+          category: 'C',
+          prompt: 'P',
+          multiplier: 1,
+          answers: [{ id: 'a1', text: 'Answer', aliases: [], points: 35, revealed: false }],
+        },
+      ],
+      brainBlitzConfig: {
+        enabled: true,
+        timerSeconds: 30,
+        targetScore: 200,
+        questions: [
+          {
+            id: 'q1',
+            prompt: 'Prompt',
+            category: 'ELA',
+            answers: [{ id: 'ba1', text: 'Answer', aliases: [], points: 35 }],
+          },
+        ],
+      },
+    });
+    s = gameReducer(s, { type: 'START_GAME' });
+    s = gameReducer(s, { type: 'SET_ACTIVE_TEAM', teamId: 'team-red' });
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'a1' });
+    s = gameReducer(s, { type: 'AWARD_ROUND' });
+    s = gameReducer(s, { type: 'NEXT_ROUND' });
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER' });
+    expect(s.brainBlitz?.finalistTeamId).toBe('team-red');
+
+    const corrupted = {
+      ...s,
+      brainBlitz: { ...s.brainBlitz!, finalistTeamId: 'team-not-in-roster' },
+    };
+    storedRaw(makeStorage(), JSON.stringify({ version: PERSIST_VERSION, state: corrupted }));
+    expect(loadPersistedState()).toBeNull();
+  });
+
   it('rejects a malformed round reference (id not in library)', () => {
     storedRaw(
       makeStorage(),

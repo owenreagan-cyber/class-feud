@@ -119,6 +119,7 @@ export function parseClientMessage(value: unknown): ClientMessage | null {
       return (
         (value.kind === 'faceoff' || value.kind === 'steal') &&
         typeof value.thinkSeconds === 'number' &&
+        Number.isFinite(value.thinkSeconds) &&
         isStringArray(value.eligibleTeamIds)
       )
         ? {
