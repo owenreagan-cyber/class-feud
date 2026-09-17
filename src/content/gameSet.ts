@@ -46,6 +46,17 @@ export type SavedGameSet = {
   createdAt: string;
   updatedAt: string;
   rounds: RoundDefinition[];
+  /**
+   * Optional default play order (a subset of `rounds` ids). When present, the
+   * game starts with only these rounds; the remaining rounds are "spare" boards
+   * the teacher can launch later via "+ EXTRA BOARD". Absent = play all rounds.
+   */
+  defaultRoundIds?: string[];
+  /**
+   * Scoring basis metadata. Built-in games use "classroom-game-weight" so the
+   * point values are clearly gameplay weights, never presented as survey data.
+   */
+  scoringBasis?: string;
   /** Optional Brain Blitz final-round configuration. Absent = disabled. */
   brainBlitz?: BrainBlitzConfig;
 };
@@ -159,6 +170,12 @@ export function duplicateRound(def: RoundDefinition): RoundDefinition {
 /** Produce an independent custom copy with brand-new game/round/answer ids. */
 export function duplicateGameSet(source: SavedGameSet): SavedGameSet {
   const now = new Date().toISOString();
+  const idMap = new Map<string, string>();
+  const rounds = source.rounds.map((def) => {
+    const copy = cloneRoundWithNewIds(def);
+    idMap.set(def.id, copy.id);
+    return copy;
+  });
   return {
     ...source,
     id: newId('game'),
@@ -166,7 +183,11 @@ export function duplicateGameSet(source: SavedGameSet): SavedGameSet {
     source: 'custom',
     createdAt: now,
     updatedAt: now,
-    rounds: source.rounds.map(cloneRoundWithNewIds),
+    rounds,
+    // Remap the default-round selection to the freshly regenerated round ids.
+    defaultRoundIds: source.defaultRoundIds
+      ? source.defaultRoundIds.map((id) => idMap.get(id) ?? id)
+      : undefined,
     brainBlitz: source.brainBlitz ? duplicateBrainBlitzConfig(source.brainBlitz) : undefined,
   };
 }

@@ -47,6 +47,7 @@ export function createInitialState(): GameState {
     roundLibrary: ROUND_LIBRARY.map(cloneRound),
     rounds: buildSelectedRounds(DEFAULT_ROUND_IDS, ROUND_LIBRARY),
     currentRoundIndex: 0,
+    noAnswerTeamIds: [],
     brainBlitzConfig: null,
     brainBlitz: null,
   };
@@ -76,6 +77,7 @@ function resetRound(state: GameState): GameState {
     strikes: 0,
     roundPot: 0,
     roundWinnerId: null,
+    noAnswerTeamIds: [],
     rounds: state.rounds.map((round, index) =>
       index === state.currentRoundIndex ? cloneRound(round) : round,
     ),
@@ -97,7 +99,11 @@ function isSetupActionAllowed(state: GameState): boolean {
 }
 
 /** Create the live Brain Blitz runtime state from an enabled config. */
-function createBrainBlitzState(config: BrainBlitzConfig, finalistTeamId: TeamId | null): BrainBlitzState {
+function createBrainBlitzState(
+  config: BrainBlitzConfig,
+  finalistTeamId: TeamId | null,
+  exhibition = false,
+): BrainBlitzState {
   return {
     status: 'setup',
     finalistTeamId,
@@ -113,6 +119,7 @@ function createBrainBlitzState(config: BrainBlitzConfig, finalistTeamId: TeamId 
     remainingSeconds: config.timerSeconds,
     timerRunning: false,
     timerExpired: false,
+    exhibition,
   };
 }
 
@@ -260,6 +267,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         strikes: 0,
         roundPot: 0,
         roundWinnerId: null,
+        noAnswerTeamIds: [],
         currentRoundIndex: 0,
         teams: state.teams.map((team) => ({ ...team, score: 0 })),
         rounds: state.rounds.map(cloneRound),
@@ -365,6 +373,57 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return awardRound(state, teamId, getRoundValue(state));
     }
 
+    // -------- Face-off no-answer rule --------
+
+    case 'MARK_NO_ANSWER': {
+      // Only meaningful before the board resolves (tossup/playing/steal). Marks
+      // a team as ineligible to steal this board. No point penalty.
+      if (
+        state.phase !== 'tossup' &&
+        state.phase !== 'playing' &&
+        state.phase !== 'steal'
+      ) {
+        return state;
+      }
+      if (!state.teams.some((team) => team.id === action.teamId)) return state;
+      if (state.noAnswerTeamIds.includes(action.teamId)) return state;
+      return { ...state, noAnswerTeamIds: [...state.noAnswerTeamIds, action.teamId] };
+    }
+
+    case 'CLEAR_NO_ANSWER': {
+      if (!state.noAnswerTeamIds.includes(action.teamId)) return state;
+      return {
+        ...state,
+        noAnswerTeamIds: state.noAnswerTeamIds.filter((id) => id !== action.teamId),
+      };
+    }
+
+    // -------- Extra-time teacher escape hatches (gameOver only) --------
+
+    case 'EXTRA_BOARD': {
+      // Launch a spare authored board after the normal game has ended. Reopens
+      // gameplay cleanly on the spare round; the winner is recomputed from
+      // scores afterward. Never auto-launched.
+      if (state.phase !== 'gameOver') return state;
+      const definition = state.roundLibrary.find((round) => round.id === action.roundId);
+      if (!definition) return state;
+      if (state.rounds.some((round) => round.id === action.roundId)) return state;
+      const rounds = [...state.rounds, cloneRound(definition)];
+      const currentRoundIndex = rounds.length - 1;
+      return {
+        ...state,
+        phase: 'tossup',
+        activeTeamId: null,
+        stealTeamId: null,
+        strikes: 0,
+        roundPot: 0,
+        roundWinnerId: null,
+        noAnswerTeamIds: [],
+        rounds,
+        currentRoundIndex,
+      };
+    }
+
     // -------- Brain Blitz final round (optional) --------
 
     case 'BRAIN_BLITZ_ENTER': {
@@ -372,10 +431,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const config = state.brainBlitzConfig;
       if (!isBrainBlitzEnabled(config)) return state;
       const winner = getWinner(state);
+      const exhibition = action.exhibition ?? false;
+      const finalistId = action.teamId ?? (winner ? winner.id : null);
       return {
         ...state,
         phase: 'brainBlitz',
-        brainBlitz: createBrainBlitzState(config, winner ? winner.id : null),
+        brainBlitz: createBrainBlitzState(config, finalistId, exhibition),
       };
     }
 

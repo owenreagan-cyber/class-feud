@@ -8,6 +8,7 @@ import {
   getRevealedCount,
   getRoundValue,
   getRoundWinner,
+  getSpareRounds,
   getStealTeam,
   getTiedTeams,
   getWinner,
@@ -18,6 +19,7 @@ import { matchAnswer } from '../../game/answerMatcher';
 import type { AnswerMatchResult, MatchQuality } from '../../game/answerMatcher';
 import { isBrainBlitzEnabled } from '../../game/brainBlitzTypes';
 import BrainBlitzTeacherControls from './BrainBlitzTeacherControls';
+import TeamButtonPanel from '../../teamButton/TeamButtonPanel';
 
 const QUALITY_LABEL: Record<MatchQuality, string> = {
   exact: 'Exact match',
@@ -232,9 +234,16 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
   const roundWinner = getRoundWinner(state);
   const winner = getWinner(state);
   const tied = getTiedTeams(state);
+  const spareRounds = getSpareRounds(state);
+  const runnerUp = winner
+    ? state.teams
+        .filter((team) => team.id !== winner.id)
+        .sort((a, b) => b.score - a.score)[0]
+    : null;
 
   const [guess, setGuess] = useState('');
   const [match, setMatch] = useState<AnswerMatchResult | null>(null);
+  const [extraBlitzTeamId, setExtraBlitzTeamId] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset transient entry state when the phase or round changes (derived-state
@@ -348,6 +357,18 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
 
       <div className="teacher-body">
         {phase === 'brainBlitz' && <BrainBlitzTeacherControls state={state} dispatch={dispatch} />}
+
+        {(phase === 'tossup' || phase === 'steal') && (
+          <TeamButtonPanel
+            teams={state.teams}
+            phase={phase}
+            activeTeamId={state.activeTeamId}
+            noAnswerTeamIds={state.noAnswerTeamIds}
+            onSetActiveTeam={(teamId) => dispatch({ type: 'SET_ACTIVE_TEAM', teamId })}
+            onMarkNoAnswer={(teamId) => dispatch({ type: 'MARK_NO_ANSWER', teamId })}
+            onSetStealTeam={(teamId) => dispatch({ type: 'SET_STEAL_TEAM', teamId })}
+          />
+        )}
 
         {(phase === 'playing' || phase === 'steal') && (
           <ConsoleSection title="Student Guess">
@@ -482,6 +503,15 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
               {stealTeam === null ? (
                 <>
                   <div className="console-hint">Choose the stealing team:</div>
+                  {state.noAnswerTeamIds.length > 0 && (
+                    <div className="console-hint">
+                      Not eligible (no answer):{' '}
+                      {state.teams
+                        .filter((team) => state.noAnswerTeamIds.includes(team.id))
+                        .map((team) => team.name)
+                        .join(', ')}
+                    </div>
+                  )}
                   <div className="team-pick-grid">
                     {eligibleStealTeams.map((team) => (
                       <TeamButton
@@ -562,16 +592,92 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
                 </span>
               ))}
             </div>
+
             {isBrainBlitzEnabled(state.brainBlitzConfig) && (
               <div className="button-row">
                 <button
                   className="primary"
                   onClick={() => dispatch({ type: 'BRAIN_BLITZ_ENTER' })}
                 >
-                  Play Brain Blitz
+                  PLAY BRAIN BLITZ
                 </button>
               </div>
             )}
+
+            {(spareRounds.length > 0 || isBrainBlitzEnabled(state.brainBlitzConfig)) && (
+              <div className="extra-time">
+                <h4>IF TIME ALLOWS</h4>
+                {spareRounds.length > 0 && (
+                  <div className="extra-time-block">
+                    <span className="extra-time-label">+ EXTRA BOARD</span>
+                    <div className="extra-time-actions">
+                      {spareRounds.map((round) => (
+                        <button
+                          key={round.id}
+                          type="button"
+                          onClick={() => dispatch({ type: 'EXTRA_BOARD', roundId: round.id })}
+                        >
+                          {round.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {isBrainBlitzEnabled(state.brainBlitzConfig) && (
+                  <div className="extra-time-block">
+                    <span className="extra-time-label">+ EXTRA BLITZ (exhibition)</span>
+                    <div className="extra-time-actions">
+                      <button
+                        type="button"
+                        onClick={() => dispatch({ type: 'BRAIN_BLITZ_ENTER', exhibition: true })}
+                      >
+                        Winning Team
+                      </button>
+                      {runnerUp && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            dispatch({
+                              type: 'BRAIN_BLITZ_ENTER',
+                              teamId: runnerUp.id,
+                              exhibition: true,
+                            })
+                          }
+                        >
+                          {runnerUp.name}
+                        </button>
+                      )}
+                      <select
+                        value={extraBlitzTeamId}
+                        onChange={(event) => setExtraBlitzTeamId(event.target.value)}
+                      >
+                        <option value="">Choose team…</option>
+                        {state.teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!extraBlitzTeamId}
+                        onClick={() => {
+                          dispatch({
+                            type: 'BRAIN_BLITZ_ENTER',
+                            teamId: extraBlitzTeamId,
+                            exhibition: true,
+                          });
+                          setExtraBlitzTeamId('');
+                        }}
+                      >
+                        Start Extra Blitz
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="button-row">
               <button
                 className="primary"
@@ -579,6 +685,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
               >
                 Play Again
               </button>
+              <button onClick={() => dispatch({ type: 'RESET_GAME' })}>End Game</button>
             </div>
           </ConsoleSection>
         )}

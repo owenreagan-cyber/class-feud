@@ -3,6 +3,7 @@ import { toRoundDefinition } from './gameSet';
 import type { RoundDefinition, SavedGameSet } from './gameSet';
 import { buildBrainBlitzQuestions } from './brainBlitzLibrary';
 import type { BrainBlitzConfig } from '../game/brainBlitzTypes';
+import { TRACK_OUT_EDITION } from './trackOutEdition';
 
 /**
  * Built-in demo game sets. These are read-only and never mutated in place;
@@ -96,6 +97,8 @@ export const BUILT_IN_GAME_SETS: SavedGameSet[] = [
     ['round-recess', 'round-backpack'],
     brainBlitz(['bb-kid-recess', 'bb-kid-backpack', 'bb-kid-pizza', 'bb-kid-party', 'bb-kid-subject']),
   ),
+  // Track Out Edition is a fully authored standalone set (own rounds + blitz).
+  TRACK_OUT_EDITION,
 ];
 
 export function getBuiltInGameSet(id: string): SavedGameSet | undefined {

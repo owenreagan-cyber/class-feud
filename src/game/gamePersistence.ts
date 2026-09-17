@@ -153,6 +153,7 @@ function isValidBrainBlitzState(value: unknown): boolean {
   if (!isNonNegativeNumber(value.remainingSeconds)) return false;
   if (typeof value.timerRunning !== 'boolean') return false;
   if (typeof value.timerExpired !== 'boolean') return false;
+  if (value.exhibition !== undefined && typeof value.exhibition !== 'boolean') return false;
   return true;
 }
 
@@ -223,6 +224,16 @@ function isValidGameState(value: unknown): value is GameState {
     return false;
   }
 
+  const noAnswerTeamIds = value.noAnswerTeamIds;
+  if (noAnswerTeamIds !== undefined && noAnswerTeamIds !== null) {
+    if (
+      !Array.isArray(noAnswerTeamIds) ||
+      !noAnswerTeamIds.every((id) => typeof id === 'string' && teamIds.has(id))
+    ) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -263,11 +274,14 @@ export function loadPersistedState(): GameState | null {
     if (parsed.version !== PERSIST_VERSION) return null;
     if (!isValidGameState(parsed.state)) return null;
     const state = parsed.state as GameState;
-    // Normalize fields that were absent in older saves to explicit null.
+    // Normalize fields that were absent in older saves to explicit defaults.
     return {
       ...state,
       brainBlitzConfig: state.brainBlitzConfig ?? null,
-      brainBlitz: state.brainBlitz ?? null,
+      brainBlitz: state.brainBlitz
+        ? { ...state.brainBlitz, exhibition: state.brainBlitz.exhibition ?? false }
+        : null,
+      noAnswerTeamIds: state.noAnswerTeamIds ?? [],
     };
   } catch {
     return null;

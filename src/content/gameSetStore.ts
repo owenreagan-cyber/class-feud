@@ -82,6 +82,17 @@ export function isValidSavedGameSet(value: unknown): value is SavedGameSet {
   if (!Array.isArray(value.rounds) || !value.rounds.every(isValidRoundDefinition)) {
     return false;
   }
+  if (value.defaultRoundIds !== undefined) {
+    if (
+      !Array.isArray(value.defaultRoundIds) ||
+      !value.defaultRoundIds.every(isString)
+    ) {
+      return false;
+    }
+  }
+  if (value.scoringBasis !== undefined && !isString(value.scoringBasis)) {
+    return false;
+  }
   if (value.brainBlitz !== undefined && !isValidBrainBlitzConfig(value.brainBlitz)) {
     return false;
   }

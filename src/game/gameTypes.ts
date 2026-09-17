@@ -62,6 +62,11 @@ export type GameState = {
   roundLibrary: FeudRound[];
   rounds: FeudRound[];
   currentRoundIndex: number;
+  /**
+   * Teams marked "NO ANSWER" during the current board's face-off. They are
+   * blocked from stealing this board only; the set resets at the next board.
+   */
+  noAnswerTeamIds: TeamId[];
   /** Authored Brain Blitz configuration (runtime copy; null when unavailable). */
   brainBlitzConfig: BrainBlitzConfig | null;
   /** Live Brain Blitz runtime state (null until a Brain Blitz round starts). */
@@ -97,8 +102,13 @@ export type GameAction =
   | { type: 'SET_STEAL_TEAM'; teamId: TeamId }
   | { type: 'RESOLVE_STEAL'; success: boolean }
   | { type: 'AWARD_ROUND'; teamId?: TeamId }
-  // Brain Blitz final round (optional)
-  | { type: 'BRAIN_BLITZ_ENTER' }
+  // Face-off no-answer rule (Team Buttons / manual play).
+  | { type: 'MARK_NO_ANSWER'; teamId: TeamId }
+  | { type: 'CLEAR_NO_ANSWER'; teamId: TeamId }
+  // Extra-time teacher escape hatches (gameOver only).
+  | { type: 'EXTRA_BOARD'; roundId: string }
+  // Brain Blitz final round (optional; `exhibition` = extra blitz, never alters winner).
+  | { type: 'BRAIN_BLITZ_ENTER'; teamId?: TeamId; exhibition?: boolean }
   | { type: 'BRAIN_BLITZ_SET_FINALIST'; teamId: TeamId }
   | { type: 'BRAIN_BLITZ_SET_PLAYER_MODE'; playerMode: BrainBlitzPlayerMode }
   | { type: 'BRAIN_BLITZ_BEGIN_PLAYER' }
@@ -136,6 +146,7 @@ export const TEAM_COLORS: readonly TeamColorOption[] = [
   { id: 'red', label: 'Red', value: '#ef4444' },
   { id: 'blue', label: 'Blue', value: '#3b82f6' },
   { id: 'green', label: 'Green', value: '#22c55e' },
+  { id: 'gold', label: 'Gold', value: '#eab308' },
   { id: 'orange', label: 'Orange', value: '#f97316' },
   { id: 'purple', label: 'Purple', value: '#a855f7' },
   { id: 'teal', label: 'Teal', value: '#14b8a6' },

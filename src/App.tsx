@@ -18,11 +18,14 @@ export default function App() {
   const [authoringSetId, setAuthoringSetId] = useState<string | null>(null);
 
   function startGameSet(set: SavedGameSet) {
-    const rounds = toFeudRounds(set.rounds);
+    const allRounds = toFeudRounds(set.rounds);
+    // Default play order (subset) vs. spare boards. Absent = play all rounds.
+    const defaultIds = set.defaultRoundIds ?? set.rounds.map((round) => round.id);
+    const selected = allRounds.filter((round) => defaultIds.includes(round.id));
     dispatch({
       type: 'LOAD_GAME_ROUNDS',
-      roundLibrary: rounds,
-      rounds,
+      roundLibrary: allRounds,
+      rounds: selected.length > 0 ? selected : allRounds,
       brainBlitzConfig: set.brainBlitz ?? null,
     });
     setScreen('play');

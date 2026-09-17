@@ -35,9 +35,17 @@ export function getRoundWinner(state: GameState): Team | null {
   return getTeamById(state, state.roundWinnerId) ?? null;
 }
 
-/** Teams eligible to attempt a steal (everyone except the controlling team). */
+/** Teams eligible to attempt a steal (everyone except the controlling team and no-answer teams). */
 export function getEligibleStealTeams(state: GameState): Team[] {
-  return state.teams.filter((team) => team.id !== state.activeTeamId);
+  return state.teams.filter(
+    (team) => team.id !== state.activeTeamId && !state.noAnswerTeamIds.includes(team.id),
+  );
+}
+
+/** Authored rounds in the library that are not currently in the play queue (spares for + EXTRA BOARD). */
+export function getSpareRounds(state: GameState): FeudRound[] {
+  const selected = new Set(state.rounds.map((round) => round.id));
+  return state.roundLibrary.filter((round) => !selected.has(round.id));
 }
 
 export function getRevealedCount(state: GameState): number {

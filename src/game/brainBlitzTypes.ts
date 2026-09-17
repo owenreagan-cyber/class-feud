@@ -83,6 +83,8 @@ export type BrainBlitzState = {
   remainingSeconds: number;
   timerRunning: boolean;
   timerExpired: boolean;
+  /** True for an "Extra Blitz" exhibition round (never alters the winner). */
+  exhibition: boolean;
 };
 
 // ---------------------------------------------------------------- defaults --
