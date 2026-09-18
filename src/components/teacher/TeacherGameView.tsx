@@ -81,7 +81,7 @@ type MatchPanelProps = {
   onStealSuccess: (answerId: string) => void;
   onStealFailed: () => void;
   /** Only meaningful when phase === 'steal': who wins the pot, and how much. */
-  stealOutcome: { stealTeamName: string; controllingTeamName: string; roundValue: number } | null;
+  stealOutcome: { stealTeamName: string; controllingTeamName: string; roundValue: number; multiplier: number } | null;
 };
 
 function MatchPanel({
@@ -96,16 +96,28 @@ function MatchPanel({
   onStealFailed,
   stealOutcome,
 }: MatchPanelProps) {
-  const successLabel = stealOutcome
-    ? `Steal Success — ${stealOutcome.stealTeamName} +${stealOutcome.roundValue}, round ends`
-    : 'Steal Success + Reveal';
-  const failLabel = stealOutcome
-    ? `Steal Failed — ${stealOutcome.controllingTeamName} +${stealOutcome.roundValue}, round ends`
-    : 'Steal Failed';
   const answer = match.answerId ? answers.find((a) => a.id === match.answerId) : null;
   const candidates = match.candidateIds
     .map((id) => answers.find((a) => a.id === id))
     .filter((a): a is FeudAnswer => a !== undefined);
+
+  // A successful steal reveals the matched answer as part of the SAME action
+  // (REVEAL_ANSWER then RESOLVE_STEAL), so if that answer isn't on the board
+  // yet its points still land in the pot the steal team actually receives.
+  // stealOutcome.roundValue reflects state as currently rendered (before
+  // either dispatch), so add the not-yet-revealed answer's points here too —
+  // scaled by the round's own multiplier, since roundValue is already
+  // multiplier-applied — otherwise the button understates the real award.
+  const successRoundValue =
+    stealOutcome && answer && !answer.revealed
+      ? stealOutcome.roundValue + answer.points * stealOutcome.multiplier
+      : stealOutcome?.roundValue;
+  const successLabel = stealOutcome
+    ? `Steal Success — ${stealOutcome.stealTeamName} +${successRoundValue}, round ends`
+    : 'Steal Success + Reveal';
+  const failLabel = stealOutcome
+    ? `Steal Failed — ${stealOutcome.controllingTeamName} +${stealOutcome.roundValue}, round ends`
+    : 'Steal Failed';
 
   const isStrong = match.quality === 'exact' || match.quality === 'alias' || match.quality === 'normalized';
 
@@ -439,6 +451,7 @@ export default function TeacherGameView({ state, dispatch, canUndo, onWrongAnswe
                         stealTeamName: stealTeam.name,
                         controllingTeamName: activeTeam?.name ?? 'Controlling team',
                         roundValue,
+                        multiplier: currentRound.multiplier,
                       }
                     : null
                 }
