@@ -13,6 +13,7 @@ import {
 } from './trackOutEdition';
 import { BUILT_IN_GAME_SETS, getBuiltInGameSet } from './builtInGameSets';
 import { duplicateGameSet, toFeudRounds } from './gameSet';
+import { matchAnswer } from '../game/answerMatcher';
 
 describe('Track Out Edition content', () => {
   const set: SavedGameSet = TRACK_OUT_EDITION;
@@ -251,5 +252,102 @@ describe('Track Out class rotations', () => {
     const class1Ids = idsFor(TRACK_OUT_EDITION);
     const class2Ids = idsFor(TRACK_OUT_CLASS_2);
     expect(class1Ids).not.toEqual(class2Ids);
+  });
+});
+
+describe('3D Print Favorites board (4th-grade kid interest refinement)', () => {
+  const board = TRACK_OUT_EDITION.rounds.find((round) => round.id === 'to-3dprint')!;
+  const runtimeAnswers = toFeudRounds([board])[0].answers;
+
+  it('prompt is framed for 4th-grade kid interest', () => {
+    expect(board.prompt.toLowerCase()).toContain('4th grader');
+    expect(board.prompt.toLowerCase()).toContain('cool to 3d print');
+  });
+
+  it('has exactly 5 answers', () => {
+    expect(board.answers).toHaveLength(5);
+  });
+
+  it('has no phone-related canonical answer', () => {
+    const phoneTerms = ['phone', 'iphone', 'earbud', 'airpod'];
+    for (const answer of board.answers) {
+      const text = answer.text.toLowerCase();
+      for (const term of phoneTerms) {
+        expect(text).not.toContain(term);
+      }
+    }
+  });
+
+  it('has no phone-related alias', () => {
+    const phoneTerms = ['phone', 'iphone', 'earbud', 'airpod', 'case', 'stand'];
+    for (const answer of board.answers) {
+      for (const alias of answer.aliases) {
+        const lower = alias.toLowerCase();
+        for (const term of phoneTerms) {
+          expect(lower).not.toContain(term);
+        }
+      }
+    }
+  });
+
+  it('fidget aliases resolve to Fidget Toy', () => {
+    for (const guess of ['fidget', 'spinner', 'clicker', 'fidget spinner', 'fidget cube', 'FIDGET']) {
+      const result = matchAnswer(guess, runtimeAnswers);
+      expect(result.quality).toBe('alias');
+      expect(result.answerId).toBe('to-3d-fidget');
+    }
+  });
+
+  it('common animal aliases resolve to Animal', () => {
+    for (const guess of ['dog', 'cat', 'dragon', 'dinosaur', 'shark', 'turtle', 'snake', 'axolotl', 'pet', 'animal figure']) {
+      const result = matchAnswer(guess, runtimeAnswers);
+      expect(result.quality).toBe('alias');
+      expect(result.answerId).toBe('to-3d-animal');
+    }
+  });
+
+  it('key ring resolves to Keychain', () => {
+    for (const guess of ['key ring', 'keyring', 'bag tag', 'backpack tag']) {
+      const result = matchAnswer(guess, runtimeAnswers);
+      expect(result.quality).toBe('alias');
+      expect(result.answerId).toBe('to-3d-keychain');
+    }
+  });
+
+  it('figurine/game piece aliases resolve to Mini Figure / Game Piece', () => {
+    for (const guess of ['figurine', 'mini', 'character', 'game piece', 'token', 'miniature']) {
+      const result = matchAnswer(guess, runtimeAnswers);
+      expect(result.quality).toBe('alias');
+      expect(result.answerId).toBe('to-3d-minifig');
+    }
+  });
+
+  it('name plate/name sign aliases resolve to Name Sign / Name Plate', () => {
+    for (const guess of ['name plate', 'nameplate', 'desk sign', 'name sign', 'initials', 'personalized sign']) {
+      const result = matchAnswer(guess, runtimeAnswers);
+      expect(result.quality).toBe('alias');
+      expect(result.answerId).toBe('to-3d-namesign');
+    }
+  });
+
+  it('canonical answers remain unique (Animal distinct from Mini Figure/Keychain/Name Sign)', () => {
+    const texts = board.answers.map((answer) => answer.text.trim().toLowerCase());
+    expect(new Set(texts).size).toBe(texts.length);
+  });
+
+  it('all points are positive', () => {
+    for (const answer of board.answers) {
+      expect(answer.points).toBeGreaterThan(0);
+    }
+  });
+
+  it('validates with no errors (including alias-collision warnings across the full edition)', () => {
+    const issues = validateGameSet(TRACK_OUT_EDITION);
+    const errors = issues.filter((issue) => issue.severity === 'error');
+    expect(errors).toEqual([]);
+  });
+
+  it('scoringBasis remains classroom-game-weight', () => {
+    expect(TRACK_OUT_EDITION.scoringBasis).toBe('classroom-game-weight');
   });
 });

@@ -91,13 +91,44 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-fall-football', 'Football', 5),
   ]),
 
-  board('to-3dprint', '3D Print Favorites', 'School Life', 'Name a cool thing to 3D print.', [
-    a('to-3d-fidget', 'Fidget toy', 35, ['spinner']),
-    a('to-3d-figurine', 'Figurine', 30, ['action figure', 'mini figure']),
-    a('to-3d-keychain', 'Keychain', 20),
-    a('to-3d-pencil', 'Pencil holder', 10, ['pencil cup']),
-    a('to-3d-name', 'Name tag', 5, ['nameplate']),
-  ]),
+  board(
+    'to-3dprint',
+    '3D Print Favorites',
+    'School Life',
+    'Name something a 4th grader would think is cool to 3D print.',
+    [
+      a('to-3d-fidget', 'Fidget Toy', 35, ['fidget', 'spinner', 'clicker', 'fidget spinner', 'fidget cube']),
+      a('to-3d-animal', 'Animal', 30, [
+        'dog',
+        'cat',
+        'dragon',
+        'dinosaur',
+        'shark',
+        'turtle',
+        'snake',
+        'axolotl',
+        'pet',
+        'animal figure',
+      ]),
+      a('to-3d-keychain', 'Keychain', 20, ['key ring', 'keyring', 'bag tag', 'backpack tag']),
+      a('to-3d-minifig', 'Mini Figure / Game Piece', 10, [
+        'figurine',
+        'mini',
+        'character',
+        'game piece',
+        'token',
+        'miniature',
+      ]),
+      a('to-3d-namesign', 'Name Sign / Name Plate', 5, [
+        'name plate',
+        'nameplate',
+        'desk sign',
+        'name sign',
+        'initials',
+        'personalized sign',
+      ]),
+    ],
+  ),
 
   board('to-snacks', 'Snack Time', 'School Life', 'Name a favorite snack.', [
     a('to-snacks-pretzels', 'Pretzels', 35),
