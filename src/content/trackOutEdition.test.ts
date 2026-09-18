@@ -10,6 +10,8 @@ import {
   TRACK_OUT_CLASS_3_ROUND_IDS,
   TRACK_OUT_CLASS_4,
   TRACK_OUT_CLASS_4_ROUND_IDS,
+  TRACK_OUT_SPARE_IDS,
+  scopeTrackOutRoundLibrary,
 } from './trackOutEdition';
 import { BUILT_IN_GAME_SETS, getBuiltInGameSet } from './builtInGameSets';
 import { duplicateGameSet, toFeudRounds } from './gameSet';
@@ -252,6 +254,56 @@ describe('Track Out class rotations', () => {
     const class1Ids = idsFor(TRACK_OUT_EDITION);
     const class2Ids = idsFor(TRACK_OUT_CLASS_2);
     expect(class1Ids).not.toEqual(class2Ids);
+  });
+
+  /** Mirrors gameSelectors.ts's getSpareRounds: roundLibrary minus the
+   *  currently-selected default rounds. */
+  function extraBoardPoolIds(set: SavedGameSet, expectedIds: string[]): string[] {
+    const allRounds = toFeudRounds(set.rounds);
+    const defaultIds = set.defaultRoundIds ?? set.rounds.map((round) => round.id);
+    const roundLibrary = scopeTrackOutRoundLibrary(set.id, defaultIds, allRounds);
+    const selected = new Set(expectedIds);
+    return roundLibrary.filter((round) => !selected.has(round.id)).map((round) => round.id);
+  }
+
+  it('each rotation offers exactly the six designated spares via + EXTRA BOARD, nothing more', () => {
+    CLASS_SETS.forEach((set, index) => {
+      const expectedIds = CLASS_DEFAULT_IDS[index];
+      const extras = extraBoardPoolIds(set, expectedIds);
+      expect(extras.sort()).toEqual([...TRACK_OUT_SPARE_IDS].sort());
+    });
+  });
+
+  it('no regular board from any rotation appears in another rotation’s Extra Board pool', () => {
+    const allRegularIds = new Set(CLASS_DEFAULT_IDS.flat());
+    CLASS_SETS.forEach((set, index) => {
+      const expectedIds = CLASS_DEFAULT_IDS[index];
+      const extras = extraBoardPoolIds(set, expectedIds);
+      for (const id of extras) {
+        // Every extra must be a designated spare, never another rotation's regular board.
+        expect(TRACK_OUT_SPARE_IDS).toContain(id);
+        const isSomeoneElsesRegular = allRegularIds.has(id) && !expectedIds.includes(id);
+        expect(isSomeoneElsesRegular).toBe(false);
+      }
+    });
+  });
+
+  it('all six designated spares are available to every rotation', () => {
+    CLASS_SETS.forEach((set, index) => {
+      const expectedIds = CLASS_DEFAULT_IDS[index];
+      const extras = new Set(extraBoardPoolIds(set, expectedIds));
+      for (const spareId of TRACK_OUT_SPARE_IDS) {
+        expect(extras.has(spareId)).toBe(true);
+      }
+    });
+  });
+
+  it('non-Track-Out built-in sets retain unrestricted Extra Board behavior (roundLibrary = all rounds)', () => {
+    const otherSet = BUILT_IN_GAME_SETS.find((set) => set.source === 'builtin' && set.id === 'builtin-mixed')!;
+    const allRounds = toFeudRounds(otherSet.rounds);
+    const defaultIds = otherSet.defaultRoundIds ?? otherSet.rounds.map((round) => round.id);
+    const roundLibrary = scopeTrackOutRoundLibrary(otherSet.id, defaultIds, allRounds);
+    expect(roundLibrary).toBe(allRounds);
   });
 });
 

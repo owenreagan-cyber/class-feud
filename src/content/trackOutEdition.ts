@@ -332,3 +332,48 @@ export const TRACK_OUT_CLASS_4: SavedGameSet = {
   scoringBasis: 'classroom-game-weight',
   brainBlitz: TRACK_OUT_BLITZ,
 };
+
+/**
+ * The six boards shared as + EXTRA BOARD candidates across all four class
+ * rotations. Not used as a regular (default) board by any rotation.
+ */
+export const TRACK_OUT_SPARE_IDS: string[] = [
+  'to-decor',
+  'to-games',
+  'to-first',
+  'to-forget',
+  'to-better',
+  'to-fivemin',
+];
+
+/**
+ * The four Track Out class-rotation game set ids. All four share the same
+ * 18-board pool (`rounds: TRACK_OUT_BOARDS`), so the app must scope each
+ * rotation's `roundLibrary` to its own 3 regulars + the 6 shared spares -
+ * otherwise every rotation's + EXTRA BOARD would offer all 15 non-default
+ * boards, including the other rotations' regular boards.
+ */
+export const TRACK_OUT_CLASS_SET_IDS: string[] = [
+  TRACK_OUT_EDITION.id,
+  TRACK_OUT_CLASS_2.id,
+  TRACK_OUT_CLASS_3.id,
+  TRACK_OUT_CLASS_4.id,
+];
+
+/**
+ * Scope a game set's round library for + EXTRA BOARD purposes: for a Track
+ * Out class rotation, only that rotation's own default boards plus the
+ * shared 6-board spare pool; for every other set, all rounds (unchanged
+ * behavior). Shared by App.tsx's startGameSet and its tests so the two can't
+ * silently diverge.
+ */
+export function scopeTrackOutRoundLibrary<T extends { id: string }>(
+  setId: string,
+  defaultIds: string[],
+  allRounds: T[],
+): T[] {
+  if (!TRACK_OUT_CLASS_SET_IDS.includes(setId)) return allRounds;
+  return allRounds.filter(
+    (round) => defaultIds.includes(round.id) || TRACK_OUT_SPARE_IDS.includes(round.id),
+  );
+}

@@ -6,6 +6,7 @@ import LibraryScreen from './screens/LibraryScreen';
 import AuthoringScreen from './screens/AuthoringScreen';
 import { toFeudRounds } from './content/gameSet';
 import type { SavedGameSet } from './content/gameSet';
+import { scopeTrackOutRoundLibrary } from './content/trackOutEdition';
 import './App.css';
 
 type Screen = 'library' | 'authoring' | 'play';
@@ -27,9 +28,17 @@ export default function App() {
     const selected = defaultIds
       .map((id) => roundsById.get(id))
       .filter((round): round is (typeof allRounds)[number] => round !== undefined);
+
+    // Track Out's four class rotations share one 18-board pool (no content
+    // duplication), but each rotation's + EXTRA BOARD spares must stay scoped
+    // to the shared 6-board pool, not the other rotations' regular boards.
+    // Every other game set is unaffected (roundLibrary = all of its rounds,
+    // same as before).
+    const roundLibrary = scopeTrackOutRoundLibrary(set.id, defaultIds, allRounds);
+
     dispatch({
       type: 'LOAD_GAME_ROUNDS',
-      roundLibrary: allRounds,
+      roundLibrary,
       rounds: selected.length > 0 ? selected : allRounds,
       brainBlitzConfig: set.brainBlitz ?? null,
     });
