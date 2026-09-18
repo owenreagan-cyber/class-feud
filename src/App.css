@@ -1967,3 +1967,100 @@ textarea.field-input {
 .extra-time-actions select {
   max-width: 200px;
 }
+
+/* ---- Answer timer (teacher HUD) ---- */
+
+.tb-answer-timer {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tb-answer-timer h4 {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.tb-answer-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.tb-answer-timer-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tb-answer-timer-team {
+  font-weight: 700;
+}
+
+.tb-answer-timer-value {
+  font-weight: 900;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tb-answer-timer-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.tb-answer-timer-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tb-duration-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- Answer timer (presenter badge) ---- */
+
+.presenter-answer-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.presenter-answer-timer-team {
+  font-weight: 700;
+}
+
+.presenter-answer-timer-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.presenter-answer-timer-value {
+  font-weight: 900;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.presenter-answer-timer-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}

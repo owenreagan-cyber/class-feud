@@ -11,6 +11,7 @@ import {
 import { MULTIPLIER_LABELS } from '../../game/gameTypes';
 import type { FeudRound, GameState } from '../../game/gameTypes';
 import { isBrainBlitzEnabled } from '../../game/brainBlitzTypes';
+import type { AnswerTimerState } from '../../game/useAnswerTimer';
 import type { WrongAnswerEvent } from '../../game/useWrongAnswerFeedback';
 import AnswerBoard from '../board/AnswerBoard';
 import StrikeIndicators from '../board/StrikeIndicators';
@@ -37,6 +38,24 @@ function statusText(state: GameState): string {
     default:
       return '';
   }
+}
+
+/**
+ * Restrained projected pacing display — visible only while a team is
+ * established as currently answering (face-off or steal). Never implies an
+ * automatic strike/no-answer on its own; expiry copy stays neutral ("TIME").
+ */
+function AnswerTimerBadge({ teamName, answerTimer }: { teamName: string; answerTimer: AnswerTimerState }) {
+  return (
+    <div className="presenter-answer-timer" role="status" aria-live="polite">
+      <span className="presenter-answer-timer-team">{teamName}</span>
+      <span className="presenter-answer-timer-label">ANSWER</span>
+      <span className="presenter-answer-timer-value">
+        {answerTimer.status === 'expired' ? 'TIME' : answerTimer.remainingSeconds}
+      </span>
+      {answerTimer.status === 'paused' && <span className="presenter-answer-timer-tag">PAUSED</span>}
+    </div>
+  );
 }
 
 function RoundIntro({ round, roundNumber }: { round: FeudRound; roundNumber: number }) {
@@ -97,11 +116,16 @@ function GameOverView({ state }: { state: GameState }) {
 export default function PresenterGameView({
   state,
   wrongAnswerEvent = null,
+  answerTimer = null,
 }: {
   state: GameState;
   wrongAnswerEvent?: WrongAnswerEvent | null;
+  answerTimer?: AnswerTimerState | null;
 }) {
   const round = getCurrentRound(state);
+  const answeringTeamName = answerTimer?.teamId
+    ? (state.teams.find((team) => team.id === answerTimer.teamId)?.name ?? null)
+    : null;
   const roundNumber = state.currentRoundIndex + 1;
   const totalRounds = state.rounds.length;
 
@@ -129,6 +153,10 @@ export default function PresenterGameView({
       </header>
 
       <Scoreboard state={state} />
+
+      {(state.phase === 'tossup' || state.phase === 'steal') && answerTimer && answeringTeamName && (
+        <AnswerTimerBadge teamName={answeringTeamName} answerTimer={answerTimer} />
+      )}
 
       {(state.phase === 'playing' || state.phase === 'steal') && (
         <div className="status-strip">

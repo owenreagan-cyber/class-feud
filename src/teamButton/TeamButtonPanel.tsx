@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useTeamButtonHost } from './useTeamButtonHost';
+import { unlockAudio } from './audio';
 import { DEFAULT_THINK_SECONDS, FACE_OFF_THINK_OPTIONS, STEAL_THINK_SECONDS } from './protocol';
 import type { GamePhase, Team } from '../game/gameTypes';
+import type { AnswerTimerApi } from '../game/useAnswerTimer';
+import AnswerTimerHud from './AnswerTimerHud';
 
 export type TeamButtonPanelProps = {
   teams: Team[];
@@ -12,6 +15,8 @@ export type TeamButtonPanelProps = {
   onSetActiveTeam: (teamId: string) => void;
   onMarkNoAnswer: (teamId: string) => void;
   onSetStealTeam: (teamId: string) => void;
+  /** Post-press pacing timer — cosmetic only, never determines FIRST/press order. */
+  answerTimer: AnswerTimerApi;
 };
 
 /**
@@ -27,6 +32,7 @@ export default function TeamButtonPanel({
   onSetActiveTeam,
   onMarkNoAnswer,
   onSetStealTeam,
+  answerTimer,
 }: TeamButtonPanelProps) {
   const teamInfos = useMemo(() => teams.map(({ id, name, color }) => ({ id, name, color })), [teams]);
   const host = useTeamButtonHost(teamInfos);
@@ -47,14 +53,35 @@ export default function TeamButtonPanel({
   const responder = pressOrder[responderIndex] ?? null;
   const responderTeam = responder ? teams.find((team) => team.id === responder.teamId) : null;
 
+  // The answer timer only ever consumes press order — it never determines
+  // FIRST/press acceptance. Face-off: whoever is currently displayed as
+  // "Answering" (the responder at responderIndex). Steal: only the very
+  // first eligible presser (queued/later stealers never get a timer).
+  // Guarded by a ref so a rerender or Strict Mode double-invoke with the
+  // same derived team id never restarts the timer.
+  const currentAnsweringTeamId = isFaceoff ? (responder?.teamId ?? null) : isSteal ? (pressOrder[0]?.teamId ?? null) : null;
+  const lastReportedTeamIdRef = useRef<string | null>(null);
+  const { start: startAnswerTimer, clear: clearAnswerTimer } = answerTimer;
+  useEffect(() => {
+    if (currentAnsweringTeamId === lastReportedTeamIdRef.current) return;
+    lastReportedTeamIdRef.current = currentAnsweringTeamId;
+    if (currentAnsweringTeamId) {
+      startAnswerTimer(currentAnsweringTeamId);
+    } else {
+      clearAnswerTimer();
+    }
+  }, [currentAnsweringTeamId, startAnswerTimer, clearAnswerTimer]);
+
   const joinUrl = `${window.location.origin}/team-button`;
 
   const startFaceoff = () => {
+    unlockAudio();
     setResponderIndex(0);
     host.startSession('faceoff', thinkSeconds, teams.map((team) => team.id));
   };
 
   const startSteal = () => {
+    unlockAudio();
     setResponderIndex(0);
     host.startSession('steal', STEAL_THINK_SECONDS, eligibleStealIds);
   };
@@ -66,6 +93,12 @@ export default function TeamButtonPanel({
   const resolveAndControl = (teamId: string) => {
     onSetActiveTeam(teamId);
     host.resolveSession();
+    // CORRECT ends the face-off outright (possession is granted immediately,
+    // with no separate "awaiting judgment" window) — clear right away rather
+    // than waiting on the derived effect above, which won't see any change
+    // since pressOrder/responderIndex are untouched by this action.
+    lastReportedTeamIdRef.current = null;
+    clearAnswerTimer();
   };
 
   if (host.demoted) {
@@ -265,7 +298,14 @@ export default function TeamButtonPanel({
           </button>
         </div>
         <div className="tb-manual-row">
-          <button type="button" onClick={host.resetButtons}>
+          <button
+            type="button"
+            onClick={() => {
+              host.resetButtons();
+              lastReportedTeamIdRef.current = null;
+              clearAnswerTimer();
+            }}
+          >
             RESET BUTTONS
           </button>
           <button
@@ -273,12 +313,16 @@ export default function TeamButtonPanel({
             onClick={() => {
               setResponderIndex(0);
               host.resetButtons();
+              lastReportedTeamIdRef.current = null;
+              clearAnswerTimer();
             }}
           >
             IGNORE BUTTON RESULT
           </button>
         </div>
       </div>
+
+      <AnswerTimerHud teams={teams} answerTimer={answerTimer} />
 
       {host.error && <span className="tb-error" role="alert">{host.error}</span>}
     </section>

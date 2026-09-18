@@ -18,6 +18,7 @@ import type { FeudAnswer, GameAction, GameState, Team } from '../../game/gameTyp
 import { matchAnswer } from '../../game/answerMatcher';
 import type { AnswerMatchResult, MatchQuality } from '../../game/answerMatcher';
 import { isBrainBlitzEnabled } from '../../game/brainBlitzTypes';
+import type { AnswerTimerApi } from '../../game/useAnswerTimer';
 import BrainBlitzTeacherControls from './BrainBlitzTeacherControls';
 import TeamButtonPanel from '../../teamButton/TeamButtonPanel';
 
@@ -230,9 +231,11 @@ type Props = {
   canUndo: boolean;
   /** Cosmetic-only: triggers the presenter X overlay + wrong-answer tone. */
   onWrongAnswer: (strong: boolean) => void;
+  /** Cosmetic post-press pacing timer — never mutates game state itself. */
+  answerTimer: AnswerTimerApi;
 };
 
-export default function TeacherGameView({ state, dispatch, canUndo, onWrongAnswer }: Props) {
+export default function TeacherGameView({ state, dispatch, canUndo, onWrongAnswer, answerTimer }: Props) {
   const phase = state.phase;
   const activeTeam = getActiveTeam(state);
   const stealTeam = getStealTeam(state);
@@ -390,6 +393,7 @@ export default function TeacherGameView({ state, dispatch, canUndo, onWrongAnswe
             onSetActiveTeam={(teamId) => dispatch({ type: 'SET_ACTIVE_TEAM', teamId })}
             onMarkNoAnswer={(teamId) => dispatch({ type: 'MARK_NO_ANSWER', teamId })}
             onSetStealTeam={(teamId) => dispatch({ type: 'SET_STEAL_TEAM', teamId })}
+            answerTimer={answerTimer}
           />
         )}
 
@@ -547,7 +551,10 @@ export default function TeacherGameView({ state, dispatch, canUndo, onWrongAnswe
                         key={team.id}
                         team={team}
                         label={`${team.name} steals`}
-                        onClick={() => dispatch({ type: 'SET_STEAL_TEAM', teamId: team.id })}
+                        onClick={() => {
+                          dispatch({ type: 'SET_STEAL_TEAM', teamId: team.id });
+                          answerTimer.start(team.id);
+                        }}
                       />
                     ))}
                   </div>
