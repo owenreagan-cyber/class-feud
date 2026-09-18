@@ -20,8 +20,13 @@ export default function App() {
   function startGameSet(set: SavedGameSet) {
     const allRounds = toFeudRounds(set.rounds);
     // Default play order (subset) vs. spare boards. Absent = play all rounds.
+    // Order follows defaultIds itself (the authored play order), not each
+    // round's incidental position in the full board array.
     const defaultIds = set.defaultRoundIds ?? set.rounds.map((round) => round.id);
-    const selected = allRounds.filter((round) => defaultIds.includes(round.id));
+    const roundsById = new Map(allRounds.map((round) => [round.id, round]));
+    const selected = defaultIds
+      .map((id) => roundsById.get(id))
+      .filter((round): round is (typeof allRounds)[number] => round !== undefined);
     dispatch({
       type: 'LOAD_GAME_ROUNDS',
       roundLibrary: allRounds,

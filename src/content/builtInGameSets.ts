@@ -3,7 +3,7 @@ import { toRoundDefinition } from './gameSet';
 import type { RoundDefinition, SavedGameSet } from './gameSet';
 import { buildBrainBlitzQuestions } from './brainBlitzLibrary';
 import type { BrainBlitzConfig } from '../game/brainBlitzTypes';
-import { TRACK_OUT_EDITION } from './trackOutEdition';
+import { TRACK_OUT_EDITION, TRACK_OUT_CLASS_2, TRACK_OUT_CLASS_3, TRACK_OUT_CLASS_4 } from './trackOutEdition';
 
 /**
  * Built-in demo game sets. These are read-only and never mutated in place;
@@ -98,7 +98,12 @@ export const BUILT_IN_GAME_SETS: SavedGameSet[] = [
     brainBlitz(['bb-kid-recess', 'bb-kid-backpack', 'bb-kid-pizza', 'bb-kid-party', 'bb-kid-subject']),
   ),
   // Track Out Edition is a fully authored standalone set (own rounds + blitz).
+  // It serves as Class 1; Classes 2-4 are sibling rotations sharing the same
+  // 18-board pool and Brain Blitz config, differing only in defaultRoundIds.
   TRACK_OUT_EDITION,
+  TRACK_OUT_CLASS_2,
+  TRACK_OUT_CLASS_3,
+  TRACK_OUT_CLASS_4,
 ];
 
 export function getBuiltInGameSet(id: string): SavedGameSet | undefined {

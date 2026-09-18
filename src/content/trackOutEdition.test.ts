@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { validateGameSet } from './contentValidation';
 import type { SavedGameSet } from './gameSet';
-import { TRACK_OUT_EDITION, TRACK_OUT_DEFAULT_ROUND_IDS } from './trackOutEdition';
-import { getBuiltInGameSet } from './builtInGameSets';
-import { duplicateGameSet } from './gameSet';
+import {
+  TRACK_OUT_EDITION,
+  TRACK_OUT_DEFAULT_ROUND_IDS,
+  TRACK_OUT_CLASS_2,
+  TRACK_OUT_CLASS_2_ROUND_IDS,
+  TRACK_OUT_CLASS_3,
+  TRACK_OUT_CLASS_3_ROUND_IDS,
+  TRACK_OUT_CLASS_4,
+  TRACK_OUT_CLASS_4_ROUND_IDS,
+} from './trackOutEdition';
+import { BUILT_IN_GAME_SETS, getBuiltInGameSet } from './builtInGameSets';
+import { duplicateGameSet, toFeudRounds } from './gameSet';
 
 describe('Track Out Edition content', () => {
   const set: SavedGameSet = TRACK_OUT_EDITION;
@@ -121,5 +130,126 @@ describe('Track Out Edition content', () => {
       expect(set.rounds.some((source) => source.id === round.id)).toBe(false);
     }
     expect(copy.scoringBasis).toBe('classroom-game-weight');
+  });
+});
+
+describe('Track Out class rotations', () => {
+  const CLASS_SETS = [TRACK_OUT_EDITION, TRACK_OUT_CLASS_2, TRACK_OUT_CLASS_3, TRACK_OUT_CLASS_4];
+  const CLASS_DEFAULT_IDS = [
+    TRACK_OUT_DEFAULT_ROUND_IDS,
+    TRACK_OUT_CLASS_2_ROUND_IDS,
+    TRACK_OUT_CLASS_3_ROUND_IDS,
+    TRACK_OUT_CLASS_4_ROUND_IDS,
+  ];
+  const ALL_BOARD_IDS = new Set(TRACK_OUT_EDITION.rounds.map((round) => round.id));
+  const EXPECTED_SPARE_IDS = ['to-decor', 'to-games', 'to-first', 'to-forget', 'to-better', 'to-fivemin'];
+
+  it('the Track Out board pool has exactly 18 boards', () => {
+    expect(TRACK_OUT_EDITION.rounds).toHaveLength(18);
+  });
+
+  it('exactly 4 class rotations exist', () => {
+    expect(CLASS_SETS).toHaveLength(4);
+    expect(CLASS_DEFAULT_IDS).toHaveLength(4);
+  });
+
+  it('each rotation names exactly 3 boards', () => {
+    for (const ids of CLASS_DEFAULT_IDS) {
+      expect(ids).toHaveLength(3);
+    }
+  });
+
+  it('every referenced board id exists in the shared 18-board pool', () => {
+    for (const ids of CLASS_DEFAULT_IDS) {
+      for (const id of ids) {
+        expect(ALL_BOARD_IDS.has(id)).toBe(true);
+      }
+    }
+  });
+
+  it('no board is used as a default in more than one rotation', () => {
+    const seen = new Map<string, number>();
+    CLASS_DEFAULT_IDS.forEach((ids, setIndex) => {
+      for (const id of ids) {
+        if (seen.has(id)) {
+          throw new Error(`board ${id} is a default in both set ${seen.get(id)} and set ${setIndex}`);
+        }
+        seen.set(id, setIndex);
+      }
+    });
+    expect(seen.size).toBe(12);
+  });
+
+  it('exactly 12 boards are used as regulars and 6 remain as the shared spare pool', () => {
+    const regularIds = new Set(CLASS_DEFAULT_IDS.flat());
+    expect(regularIds.size).toBe(12);
+    const spareIds = [...ALL_BOARD_IDS].filter((id) => !regularIds.has(id));
+    expect(spareIds.sort()).toEqual([...EXPECTED_SPARE_IDS].sort());
+    // Regular and spare sets are disjoint and their union is all 18 boards.
+    for (const id of spareIds) expect(regularIds.has(id)).toBe(false);
+    expect(regularIds.size + spareIds.length).toBe(ALL_BOARD_IDS.size);
+  });
+
+  it('every board has unique answer ids and unique canonical answer text', () => {
+    for (const round of TRACK_OUT_EDITION.rounds) {
+      const ids = round.answers.map((answer) => answer.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      const texts = round.answers.map((answer) => answer.text.trim().toLowerCase());
+      expect(new Set(texts).size).toBe(texts.length);
+    }
+  });
+
+  it('all four rotations share the same 18-board pool and Brain Blitz (no content duplication)', () => {
+    for (const set of CLASS_SETS) {
+      expect(set.rounds).toBe(TRACK_OUT_EDITION.rounds);
+      expect(set.brainBlitz).toBe(TRACK_OUT_EDITION.brainBlitz);
+    }
+  });
+
+  it('scoringBasis remains classroom-game-weight for every rotation', () => {
+    for (const set of CLASS_SETS) {
+      expect(set.scoringBasis).toBe('classroom-game-weight');
+    }
+  });
+
+  it('each rotation is registered as a distinct, pickable built-in game set', () => {
+    const ids = CLASS_SETS.map((set) => set.id);
+    expect(new Set(ids).size).toBe(4);
+    for (const set of CLASS_SETS) {
+      expect(getBuiltInGameSet(set.id)).toBe(set);
+      expect(BUILT_IN_GAME_SETS).toContain(set);
+    }
+  });
+
+  /** Mirrors the fixed App.tsx startGameSet: play order follows defaultRoundIds
+   *  itself, not each round's incidental position in the full board array. */
+  function selectDefaultRounds(set: SavedGameSet) {
+    const allRounds = toFeudRounds(set.rounds);
+    const defaultIds = set.defaultRoundIds ?? set.rounds.map((round) => round.id);
+    const roundsById = new Map(allRounds.map((round) => [round.id, round]));
+    return defaultIds.map((id) => roundsById.get(id)).filter((round) => round !== undefined);
+  }
+
+  it('each rotation loads its own three boards, in the authored order (not array position)', () => {
+    CLASS_SETS.forEach((set, index) => {
+      const expectedIds = CLASS_DEFAULT_IDS[index];
+      const selected = selectDefaultRounds(set);
+      // Exact order match -- catches the class of bug where filter() silently
+      // reorders to each round's position in the full 18-board array instead
+      // of the authored defaultRoundIds order.
+      expect(selected.map((round) => round.id)).toEqual(expectedIds);
+      expect(selected).toHaveLength(3);
+    });
+  });
+
+  it('switching from one rotation to another changes the playable three boards', () => {
+    const idsFor = (set: SavedGameSet) => {
+      const allRounds = toFeudRounds(set.rounds);
+      const defaultIds = set.defaultRoundIds ?? set.rounds.map((round) => round.id);
+      return allRounds.filter((round) => defaultIds.includes(round.id)).map((round) => round.id).sort();
+    };
+    const class1Ids = idsFor(TRACK_OUT_EDITION);
+    const class2Ids = idsFor(TRACK_OUT_CLASS_2);
+    expect(class1Ids).not.toEqual(class2Ids);
   });
 });

@@ -249,3 +249,55 @@ export const TRACK_OUT_EDITION: SavedGameSet = {
   scoringBasis: 'classroom-game-weight',
   brainBlitz: TRACK_OUT_BLITZ,
 };
+
+// ------------------------------------------------------- class rotations --
+//
+// Four class-specific rotations sharing the same 18-board pool (no content
+// duplication: every rotation references the same TRACK_OUT_BOARDS array and
+// TRACK_OUT_BLITZ config; only `defaultRoundIds` differs). Each rotation's
+// non-default boards remain available to that class via "+ EXTRA BOARD",
+// exactly like the original Track Out Edition entry above (which serves as
+// Class 1 and is unchanged).
+
+export const TRACK_OUT_CLASS_2_ROUND_IDS: string[] = ['to-3dprint', 'to-movement', 'to-lazy'];
+export const TRACK_OUT_CLASS_3_ROUND_IDS: string[] = ['to-supplies', 'to-fall', 'to-roadtrip'];
+export const TRACK_OUT_CLASS_4_ROUND_IDS: string[] = ['to-snacks', 'to-fallsports', 'to-dontwant'];
+
+export const TRACK_OUT_CLASS_2: SavedGameSet = {
+  id: 'builtin-track-out-class-2',
+  title: 'Track Out — Class 2',
+  description: '3D print favorites, movement class, and a lazy day.',
+  source: 'builtin',
+  createdAt: '2026-09-16T00:00:00.000Z',
+  updatedAt: '2026-09-16T00:00:00.000Z',
+  rounds: TRACK_OUT_BOARDS,
+  defaultRoundIds: TRACK_OUT_CLASS_2_ROUND_IDS,
+  scoringBasis: 'classroom-game-weight',
+  brainBlitz: TRACK_OUT_BLITZ,
+};
+
+export const TRACK_OUT_CLASS_3: SavedGameSet = {
+  id: 'builtin-track-out-class-3',
+  title: 'Track Out — Class 3',
+  description: 'School supplies, fall favorites, and road trip fun.',
+  source: 'builtin',
+  createdAt: '2026-09-16T00:00:00.000Z',
+  updatedAt: '2026-09-16T00:00:00.000Z',
+  rounds: TRACK_OUT_BOARDS,
+  defaultRoundIds: TRACK_OUT_CLASS_3_ROUND_IDS,
+  scoringBasis: 'classroom-game-weight',
+  brainBlitz: TRACK_OUT_BLITZ,
+};
+
+export const TRACK_OUT_CLASS_4: SavedGameSet = {
+  id: 'builtin-track-out-class-4',
+  title: 'Track Out — Class 4',
+  description: 'Snack time, fall sports, and things you don’t want to hear.',
+  source: 'builtin',
+  createdAt: '2026-09-16T00:00:00.000Z',
+  updatedAt: '2026-09-16T00:00:00.000Z',
+  rounds: TRACK_OUT_BOARDS,
+  defaultRoundIds: TRACK_OUT_CLASS_4_ROUND_IDS,
+  scoringBasis: 'classroom-game-weight',
+  brainBlitz: TRACK_OUT_BLITZ,
+};
