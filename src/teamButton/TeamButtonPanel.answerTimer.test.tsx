@@ -302,4 +302,15 @@ describe('TeamButtonPanel answer timer wiring', () => {
     expect(ctx.api.answerTimer.remainingSeconds).toBe(remaining);
     ctx.view.unmount();
   });
+
+  it('renders a join QR code alongside the typed join URL', () => {
+    const ctx = mount({ phase: 'tossup', teamList: teams(2) });
+    const container = document.body.querySelector('.tb-panel') as HTMLElement;
+    const qr = container.querySelector('.tb-join-qr');
+    expect(qr).toBeTruthy();
+    expect(qr?.getAttribute('role')).toBe('img');
+    const code = container.querySelector('.tb-join-url code');
+    expect(code?.textContent).toMatch(/\/team-button$/);
+    ctx.view.unmount();
+  });
 });

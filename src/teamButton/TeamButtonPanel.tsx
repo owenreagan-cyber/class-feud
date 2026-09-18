@@ -6,6 +6,7 @@ import { DEFAULT_THINK_SECONDS, FACE_OFF_THINK_OPTIONS, STEAL_THINK_SECONDS } fr
 import type { GamePhase, Team } from '../game/gameTypes';
 import type { AnswerTimerApi } from '../game/useAnswerTimer';
 import AnswerTimerHud from './AnswerTimerHud';
+import JoinQrCode from './JoinQrCode';
 
 export type TeamButtonPanelProps = {
   teams: Team[];
@@ -129,8 +130,11 @@ export default function TeamButtonPanel({
       </div>
 
       <div className="tb-join-url">
-        <span>Join on each iPad:</span>
-        <code>{joinUrl}</code>
+        <JoinQrCode value={joinUrl} />
+        <div className="tb-join-url-text">
+          <span>Join on each iPad — scan, or type:</span>
+          <code>{joinUrl}</code>
+        </div>
       </div>
 
       <div className="tb-connected-list">

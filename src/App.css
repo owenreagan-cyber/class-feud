@@ -1697,10 +1697,23 @@ textarea.field-input {
 .tb-join-url {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
   font-size: 14px;
   color: var(--muted);
+}
+
+.tb-join-qr {
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 6px;
+  background: #fff;
+}
+
+.tb-join-url-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .tb-join-url code {
@@ -1710,6 +1723,7 @@ textarea.field-input {
   padding: 4px 8px;
   font-size: 14px;
   color: var(--accent);
+  width: fit-content;
 }
 
 .tb-connected-list {
