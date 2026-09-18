@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, Dispatch, ReactNode } from 'react';
 import {
   getActiveTeam,
@@ -228,9 +228,11 @@ type Props = {
   state: GameState;
   dispatch: Dispatch<GameAction>;
   canUndo: boolean;
+  /** Cosmetic-only: triggers the presenter X overlay + wrong-answer tone. */
+  onWrongAnswer: (strong: boolean) => void;
 };
 
-export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
+export default function TeacherGameView({ state, dispatch, canUndo, onWrongAnswer }: Props) {
   const phase = state.phase;
   const activeTeam = getActiveTeam(state);
   const stealTeam = getStealTeam(state);
@@ -291,10 +293,17 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
     clearMatch();
   };
 
-  const markStrike = () => {
+  const markStrike = useCallback(() => {
+    // Mirror the reducer's own guard so a no-op strike (already at 3, or the
+    // wrong phase) never triggers presenter feedback for nothing.
+    const willStrike = phase === 'playing' && state.strikes < MAX_STRIKES;
     dispatch({ type: 'ADD_STRIKE' });
-    clearMatch();
-  };
+    setGuess('');
+    setMatch(null);
+    if (willStrike) {
+      onWrongAnswer(state.strikes + 1 >= MAX_STRIKES);
+    }
+  }, [phase, state.strikes, dispatch, onWrongAnswer]);
 
   const confirmStealSuccess = (answerId: string) => {
     dispatch({ type: 'REVEAL_ANSWER', answerId });
@@ -303,8 +312,12 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
   };
 
   const confirmStealFailed = () => {
+    const willResolve = phase === 'steal' && state.stealTeamId !== null && state.activeTeamId !== null;
     dispatch({ type: 'RESOLVE_STEAL', success: false });
     clearMatch();
+    if (willResolve) {
+      onWrongAnswer(false);
+    }
   };
 
   // Classroom-speed keyboard shortcuts. Safe: gated on focus so typing works.
@@ -335,7 +348,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
         return;
       }
       if (event.key === 'x') {
-        dispatch({ type: 'ADD_STRIKE' });
+        markStrike();
         return;
       }
       if (event.key === 'X') {
@@ -352,7 +365,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [dispatch, phase, currentRound.answers, state]);
+  }, [dispatch, phase, currentRound.answers, state, markStrike]);
 
   return (
     <div className="teacher-view">
@@ -470,10 +483,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
 
             <ConsoleSection title="Strikes">
               <div className="button-row">
-                <button
-                  disabled={state.strikes >= MAX_STRIKES}
-                  onClick={() => dispatch({ type: 'ADD_STRIKE' })}
-                >
+                <button disabled={state.strikes >= MAX_STRIKES} onClick={markStrike}>
                   Add Strike ({state.strikes}/{MAX_STRIKES})
                 </button>
                 <button

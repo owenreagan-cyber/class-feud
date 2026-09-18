@@ -11,10 +11,12 @@ import {
 import { MULTIPLIER_LABELS } from '../../game/gameTypes';
 import type { FeudRound, GameState } from '../../game/gameTypes';
 import { isBrainBlitzEnabled } from '../../game/brainBlitzTypes';
+import type { WrongAnswerEvent } from '../../game/useWrongAnswerFeedback';
 import AnswerBoard from '../board/AnswerBoard';
 import StrikeIndicators from '../board/StrikeIndicators';
 import Scoreboard from '../scoreboard/Scoreboard';
 import BrainBlitzPresenter from './BrainBlitzPresenter';
+import WrongAnswerOverlay from './WrongAnswerOverlay';
 
 function statusText(state: GameState): string {
   switch (state.phase) {
@@ -92,7 +94,13 @@ function GameOverView({ state }: { state: GameState }) {
   );
 }
 
-export default function PresenterGameView({ state }: { state: GameState }) {
+export default function PresenterGameView({
+  state,
+  wrongAnswerEvent = null,
+}: {
+  state: GameState;
+  wrongAnswerEvent?: WrongAnswerEvent | null;
+}) {
   const round = getCurrentRound(state);
   const roundNumber = state.currentRoundIndex + 1;
   const totalRounds = state.rounds.length;
@@ -165,6 +173,8 @@ export default function PresenterGameView({ state }: { state: GameState }) {
         {state.phase === 'roundOver' && <RoundOverView state={state} />}
         {state.phase === 'gameOver' && <GameOverView state={state} />}
       </main>
+
+      <WrongAnswerOverlay event={wrongAnswerEvent} />
     </div>
   );
 }

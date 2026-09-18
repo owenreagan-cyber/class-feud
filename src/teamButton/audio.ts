@@ -1,15 +1,20 @@
-// Lightweight Web Audio "ding" / confirmation for Team Buttons. No audio
-// assets, no loops, no loud tones. Respects browser autoplay restrictions:
-// every sound is triggered by a user gesture and fails silently otherwise.
+// Lightweight Web Audio "ding" / confirmation tones. No audio assets, no
+// loops, no loud tones. Respects browser autoplay restrictions: every sound
+// is triggered by a user gesture and fails silently otherwise.
+//
+// Originally built for Team Buttons; the same shared singleton is also used
+// by the teacher/presenter screen (same document, so the same AudioContext
+// applies) for the wrong-answer strike/steal-failure cue.
 //
 // iOS Safari only creates/resumes an AudioContext synchronously inside a real
 // user-gesture event handler; a context first created later (e.g. from a
 // state-change effect) is created suspended and stays that way for the life
 // of the page. `unlockAudio` exists specifically to be called from such a
-// gesture (team join tap, button press) so the context is always created (or
-// resumed) at a point iOS is willing to honor. `tone` never creates the
-// context itself — it only ever plays through whatever `unlockAudio` already
-// set up, so a missed/failed unlock degrades to silence, never an error.
+// gesture (team join tap, button press, teacher strike button) so the
+// context is always created (or resumed) at a point iOS is willing to honor.
+// `tone` never creates the context itself — it only ever plays through
+// whatever `unlockAudio` already set up, so a missed/failed unlock degrades
+// to silence, never an error.
 
 let audioContext: AudioContext | null = null;
 
@@ -77,4 +82,14 @@ export function playReadyDing(): void {
 export function playFirstPress(): void {
   tone(660, 0.1);
   tone(880, 0.12, 0.12);
+}
+
+/**
+ * Short, low, descending two-note cue for a wrong answer (strike or failed
+ * steal). Original/generated tone, no sampled audio. Kept low-pitched and
+ * brief so it reads as a game-show "womp" rather than a shrill alarm.
+ */
+export function playWrongAnswerSound(): void {
+  tone(196, 0.16);
+  tone(130, 0.22, 0.14);
 }

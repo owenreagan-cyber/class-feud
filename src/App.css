@@ -203,6 +203,7 @@
 /* ---------- Presenter (game-show surface) ---------- */
 
 .presenter {
+  position: relative;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -471,6 +472,65 @@
   }
   100% {
     transform: scale(1);
+  }
+}
+
+/* ---------- Wrong-answer overlay (strike / failed steal) ---------- */
+
+.wrong-answer-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.wrong-answer-glyphs {
+  font-size: 160px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--danger);
+  text-shadow: 0 0 40px rgba(239, 68, 68, 0.65);
+  animation: wrongAnswerPop 0.9s ease-out both;
+}
+
+.wrong-answer-glyphs--triple {
+  display: flex;
+  gap: 18px;
+  font-size: 96px;
+}
+
+.wrong-answer-overlay--static .wrong-answer-glyphs {
+  animation: none;
+}
+
+@keyframes wrongAnswerPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  25% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrong-answer-glyphs {
+    animation: none;
   }
 }
 
