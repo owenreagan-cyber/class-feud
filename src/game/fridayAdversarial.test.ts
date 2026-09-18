@@ -393,3 +393,112 @@ describe('AUDIT 20 — persistence corruption', () => {
     expect(loaded?.brainBlitz?.remainingSeconds).toBe(30);
   });
 });
+
+describe('AUDIT: round-end flow lock (steal outcome, pacing, primary Blitz one-shot)', () => {
+  it('a successful steal transfers the FULL pot and ends the round immediately (no continued guessing)', () => {
+    let s = controlRed(start(FOUR, [makeRound('b1', 100)]));
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' }); // pot = 100
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'ADD_STRIKE' }); // 3rd strike -> steal
+    expect(s.phase).toBe('steal');
+    s = gameReducer(s, { type: 'SET_STEAL_TEAM', teamId: 'team-blue' });
+    s = gameReducer(s, { type: 'RESOLVE_STEAL', success: true });
+    expect(s.phase).toBe('roundOver'); // round ends immediately
+    expect(s.teams.find((t) => t.id === 'team-blue')?.score).toBe(100); // stealer gets the ENTIRE pot
+    expect(s.teams.find((t) => t.id === 'team-red')?.score).toBe(0); // controller gets none of it
+    // The stealing team never becomes the active/controlling team continuing the board.
+    expect(s.activeTeamId).toBe('team-red');
+    // Stealing team cannot keep "guessing" -- REVEAL_ANSWER is blocked outside playing/steal.
+    const beforePot = s.roundPot;
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' });
+    expect(s.roundPot).toBe(beforePot);
+  });
+
+  it('a failed steal awards the FULL pot to the original controlling team and ends the round', () => {
+    let s = controlRed(start(FOUR, [makeRound('b1', 70)]));
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' }); // pot = 70
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'SET_STEAL_TEAM', teamId: 'team-blue' });
+    s = gameReducer(s, { type: 'RESOLVE_STEAL', success: false });
+    expect(s.phase).toBe('roundOver');
+    expect(s.teams.find((t) => t.id === 'team-red')?.score).toBe(70);
+    expect(s.teams.find((t) => t.id === 'team-blue')?.score).toBe(0);
+  });
+
+  it('a successful steal does not apply any extra multiplier beyond the round’s own', () => {
+    const round: FeudRound = { ...makeRound('b1', 70), multiplier: 3 };
+    let s = controlRed(start(FOUR, [round]));
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' }); // pot = 70, x3 = 210
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'ADD_STRIKE' });
+    s = gameReducer(s, { type: 'SET_STEAL_TEAM', teamId: 'team-blue' });
+    s = gameReducer(s, { type: 'RESOLVE_STEAL', success: true });
+    expect(s.teams.find((t) => t.id === 'team-blue')?.score).toBe(210); // 70 x 3, not x6
+  });
+
+  it('the primary Brain Blitz cannot be started twice', () => {
+    let s = controlRed(start());
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' });
+    s = gameReducer(s, { type: 'AWARD_ROUND' });
+    s = gameReducer(s, { type: 'NEXT_ROUND' }); // -> gameOver (single-board game)
+    expect(s.phase).toBe('gameOver');
+    expect(s.primaryBrainBlitzPlayed).toBe(false);
+
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER' });
+    expect(s.phase).toBe('brainBlitz');
+    expect(s.primaryBrainBlitzPlayed).toBe(true);
+
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_EXIT' });
+    expect(s.phase).toBe('gameOver');
+
+    // Attempting to re-enter the primary Blitz is a no-op.
+    const beforeRetry = s;
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER' });
+    expect(s).toBe(beforeRetry); // identity-unchanged: reducer treated it as a no-op
+    expect(s.phase).toBe('gameOver');
+  });
+
+  it('Extra Blitz (exhibition) remains available and replayable after the primary Blitz has been played', () => {
+    let s = controlRed(start());
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' });
+    s = gameReducer(s, { type: 'AWARD_ROUND' });
+    s = gameReducer(s, { type: 'NEXT_ROUND' });
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER' });
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_EXIT' });
+    expect(s.primaryBrainBlitzPlayed).toBe(true);
+
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER', exhibition: true });
+    expect(s.phase).toBe('brainBlitz');
+    expect(s.brainBlitz?.exhibition).toBe(true);
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_EXIT' });
+    // Can be replayed again -- exhibition has no one-shot limit.
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER', exhibition: true });
+    expect(s.phase).toBe('brainBlitz');
+    expect(s.primaryBrainBlitzPlayed).toBe(true); // still true, unaffected by exhibition runs
+  });
+
+  it('going to Brain Blitz early (skipping unplayed rounds) preserves scores and awards nothing for skipped rounds', () => {
+    const rounds = [makeRound('b1', 40), makeRound('b2', 60), makeRound('b3', 80)];
+    let s = controlRed(start(FOUR, rounds));
+    s = gameReducer(s, { type: 'REVEAL_ANSWER', answerId: 'b1-a1' });
+    s = gameReducer(s, { type: 'AWARD_ROUND' }); // red: 40
+    expect(s.phase).toBe('roundOver');
+    expect(s.teams.find((t) => t.id === 'team-red')?.score).toBe(40);
+
+    // Teacher skips boards 2 and 3 entirely (mirrors the "Skip to Final Score" button).
+    s = gameReducer(s, { type: 'END_GAME' });
+    expect(s.phase).toBe('gameOver');
+    // Score from the one completed board is preserved; nothing was awarded for b2/b3.
+    expect(s.teams.find((t) => t.id === 'team-red')?.score).toBe(40);
+    const totalScore = s.teams.reduce((sum, t) => sum + t.score, 0);
+    expect(totalScore).toBe(40); // only the completed board's pot was ever awarded
+
+    // Brain Blitz can now be entered normally from this early gameOver.
+    s = gameReducer(s, { type: 'BRAIN_BLITZ_ENTER' });
+    expect(s.phase).toBe('brainBlitz');
+  });
+});

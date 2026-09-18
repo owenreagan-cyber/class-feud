@@ -1,4 +1,5 @@
 import type { AnswerDefinition, RoundDefinition, SavedGameSet } from './gameSet';
+import type { Multiplier } from '../game/gameTypes';
 import type { BrainBlitzAnswer, BrainBlitzConfig, BrainBlitzQuestion } from '../game/brainBlitzTypes';
 
 /**
@@ -24,8 +25,9 @@ function board(
   category: string,
   prompt: string,
   answers: AnswerDefinition[],
+  multiplier: Multiplier = 1,
 ): RoundDefinition {
-  return { id, title, category, prompt, multiplier: 1, answers };
+  return { id, title, category, prompt, multiplier, answers };
 }
 
 // ------------------------------------------------------------------ boards --
@@ -47,7 +49,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-recess-soccer', 'Soccer', 20),
     a('to-recess-basketball', 'Basketball', 10, ['hoops']),
     a('to-recess-slides', 'Slides', 5, ['sliding']),
-  ]),
+  ], 2),
 
   // ---- default board 3: Track Out / Fall ----
   board('to-plans', 'Track Out Plans', 'Track Out', 'Name something kids plan to do over track out.', [
@@ -56,7 +58,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-plans-friends', 'See friends', 20, ['hang out', 'play dates']),
     a('to-plans-travel', 'Travel', 10, ['trip', 'road trip']),
     a('to-plans-outside', 'Play outside', 5, ['ride bikes']),
-  ]),
+  ], 3),
 
   // ---- spare boards ----
   board('to-decor', 'Locker Decor', 'Locker Life', 'Name a way to decorate a locker.', [
@@ -81,7 +83,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-movement-kickball', 'Kickball', 20),
     a('to-movement-tag', 'Tag', 10, ['chase']),
     a('to-movement-stretch', 'Stretch', 5, ['warm up']),
-  ]),
+  ], 2),
 
   board('to-fall', 'Fall Favorites', 'Fall', 'Name a favorite thing about fall.', [
     a('to-fall-leaves', 'Leaves', 35, ['falling leaves', 'colorful leaves']),
@@ -89,7 +91,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-fall-pumpkins', 'Pumpkins', 20, ['pumpkin patch']),
     a('to-fall-cocoa', 'Hot chocolate', 10, ['cocoa']),
     a('to-fall-football', 'Football', 5),
-  ]),
+  ], 2),
 
   board(
     'to-3dprint',
@@ -144,7 +146,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-lazy-read', 'Read', 20, ['books']),
     a('to-lazy-games', 'Video games', 10, ['gaming']),
     a('to-lazy-snuggle', 'Snuggle up', 5, ['cozy blanket']),
-  ]),
+  ], 3),
 
   board('to-games', 'Video Games', 'Kid Interest', 'Name a type of video game.', [
     a('to-games-racing', 'Racing', 35, ['racing game']),
@@ -160,7 +162,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-road-games', 'Car games', 20, ['i spy']),
     a('to-road-sights', 'Scenery', 10, ['views', 'sights']),
     a('to-road-rest', 'Rest stops', 5, ['pit stops']),
-  ]),
+  ], 3),
 
   board('to-fallsports', 'Fall Sports', 'Fall', 'Name a fall sport.', [
     a('to-sport-football', 'Football', 35),
@@ -168,7 +170,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-sport-cross', 'Cross country', 20, ['running']),
     a('to-sport-volleyball', 'Volleyball', 10),
     a('to-sport-cheer', 'Cheer', 5, ['cheerleading']),
-  ]),
+  ], 2),
 
   board('to-first', 'First Track of 4th Grade', 'School Life', 'Name the best part of starting 4th grade.', [
     a('to-first-friends', 'Friends', 35, ['classmates']),
@@ -208,7 +210,7 @@ const TRACK_OUT_BOARDS: RoundDefinition[] = [
     a('to-dw-homework', 'You have homework', 20, ['break homework']),
     a('to-dw-early', 'Time to wake up early', 10, ['early morning']),
     a('to-dw-over', 'Track out is over', 5, ['back to school']),
-  ]),
+  ], 3),
 ];
 
 // --------------------------------------------------------------- Brain Blitz --

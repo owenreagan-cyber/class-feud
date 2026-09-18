@@ -305,6 +305,21 @@ describe('Track Out class rotations', () => {
     const roundLibrary = scopeTrackOutRoundLibrary(otherSet.id, defaultIds, allRounds);
     expect(roundLibrary).toBe(allRounds);
   });
+
+  it('every rotation’s 3 regular boards carry the Friday 1x/2x/3x multiplier progression, in play order', () => {
+    const roundsById = new Map(TRACK_OUT_EDITION.rounds.map((round) => [round.id, round]));
+    CLASS_DEFAULT_IDS.forEach((ids) => {
+      const multipliers = ids.map((id) => roundsById.get(id)?.multiplier);
+      expect(multipliers).toEqual([1, 2, 3]);
+    });
+  });
+
+  it('the 6 shared spare boards are unaffected by the 1x/2x/3x progression (default 1x)', () => {
+    const roundsById = new Map(TRACK_OUT_EDITION.rounds.map((round) => [round.id, round]));
+    for (const spareId of TRACK_OUT_SPARE_IDS) {
+      expect(roundsById.get(spareId)?.multiplier).toBe(1);
+    }
+  });
 });
 
 describe('3D Print Favorites board (4th-grade kid interest refinement)', () => {

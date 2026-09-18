@@ -71,6 +71,12 @@ export type GameState = {
   brainBlitzConfig: BrainBlitzConfig | null;
   /** Live Brain Blitz runtime state (null until a Brain Blitz round starts). */
   brainBlitz: BrainBlitzState | null;
+  /**
+   * True once the official (non-exhibition) Brain Blitz has been entered this
+   * game. Prevents accidentally re-triggering the primary Blitz a second
+   * time; Extra Blitz (exhibition) is unaffected and always replayable.
+   */
+  primaryBrainBlitzPlayed: boolean;
 };
 
 export type GameAction =

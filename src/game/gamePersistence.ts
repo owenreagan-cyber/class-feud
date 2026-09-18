@@ -240,6 +240,11 @@ function isValidGameState(value: unknown): value is GameState {
     }
   }
 
+  const primaryBrainBlitzPlayed = value.primaryBrainBlitzPlayed;
+  if (primaryBrainBlitzPlayed !== undefined && typeof primaryBrainBlitzPlayed !== 'boolean') {
+    return false;
+  }
+
   return true;
 }
 
@@ -288,6 +293,7 @@ export function loadPersistedState(): GameState | null {
         ? { ...state.brainBlitz, exhibition: state.brainBlitz.exhibition ?? false }
         : null,
       noAnswerTeamIds: state.noAnswerTeamIds ?? [],
+      primaryBrainBlitzPlayed: state.primaryBrainBlitzPlayed ?? false,
     };
   } catch {
     return null;

@@ -50,6 +50,7 @@ export function createInitialState(): GameState {
     noAnswerTeamIds: [],
     brainBlitzConfig: null,
     brainBlitz: null,
+    primaryBrainBlitzPlayed: false,
   };
 }
 
@@ -279,6 +280,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         currentRoundIndex: 0,
         teams: state.teams.map((team) => ({ ...team, score: 0 })),
         rounds: state.rounds.map(cloneRound),
+        primaryBrainBlitzPlayed: false,
       };
     }
 
@@ -438,13 +440,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== 'gameOver') return state;
       const config = state.brainBlitzConfig;
       if (!isBrainBlitzEnabled(config)) return state;
-      const winner = getWinner(state);
       const exhibition = action.exhibition ?? false;
+      // The official Brain Blitz is a one-shot per game; Extra Blitz
+      // (exhibition) has no such limit and is always replayable.
+      if (!exhibition && state.primaryBrainBlitzPlayed) return state;
+      const winner = getWinner(state);
       const finalistId = action.teamId ?? (winner ? winner.id : null);
       return {
         ...state,
         phase: 'brainBlitz',
         brainBlitz: createBrainBlitzState(config, finalistId, exhibition),
+        primaryBrainBlitzPlayed: exhibition ? state.primaryBrainBlitzPlayed : true,
       };
     }
 

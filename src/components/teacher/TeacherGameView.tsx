@@ -79,6 +79,8 @@ type MatchPanelProps = {
   onTryAgain: () => void;
   onStealSuccess: (answerId: string) => void;
   onStealFailed: () => void;
+  /** Only meaningful when phase === 'steal': who wins the pot, and how much. */
+  stealOutcome: { stealTeamName: string; controllingTeamName: string; roundValue: number } | null;
 };
 
 function MatchPanel({
@@ -91,7 +93,14 @@ function MatchPanel({
   onTryAgain,
   onStealSuccess,
   onStealFailed,
+  stealOutcome,
 }: MatchPanelProps) {
+  const successLabel = stealOutcome
+    ? `Steal Success — ${stealOutcome.stealTeamName} +${stealOutcome.roundValue}, round ends`
+    : 'Steal Success + Reveal';
+  const failLabel = stealOutcome
+    ? `Steal Failed — ${stealOutcome.controllingTeamName} +${stealOutcome.roundValue}, round ends`
+    : 'Steal Failed';
   const answer = match.answerId ? answers.find((a) => a.id === match.answerId) : null;
   const candidates = match.candidateIds
     .map((id) => answers.find((a) => a.id === id))
@@ -124,10 +133,10 @@ function MatchPanel({
           ) : (
             <div className="button-row">
               <button className="success" onClick={() => onStealSuccess(match.answerId!)}>
-                Steal Success + Reveal
+                {successLabel}
               </button>
               <button className="danger" onClick={onStealFailed}>
-                Steal Failed
+                {failLabel}
               </button>
               <button onClick={onChooseAnother}>Choose Another</button>
             </div>
@@ -159,7 +168,7 @@ function MatchPanel({
               </button>
             ) : (
               <button className="danger" onClick={onStealFailed}>
-                Steal Failed
+                {failLabel}
               </button>
             )}
             <button onClick={onTryAgain}>Try Again</button>
@@ -177,7 +186,7 @@ function MatchPanel({
             ) : (
               <>
                 <button className="danger" onClick={onStealFailed}>
-                  Steal Failed
+                  {failLabel}
                 </button>
                 <button onClick={onTryAgain}>Clear</button>
               </>
@@ -200,7 +209,7 @@ function MatchPanel({
             ) : (
               <>
                 <button className="danger" onClick={onStealFailed}>
-                  Steal Failed
+                  {failLabel}
                 </button>
                 <button onClick={onTryAgain}>Try Again</button>
               </>
@@ -407,6 +416,15 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
                 onTryAgain={tryAgain}
                 onStealSuccess={confirmStealSuccess}
                 onStealFailed={confirmStealFailed}
+                stealOutcome={
+                  phase === 'steal' && stealTeam
+                    ? {
+                        stealTeamName: stealTeam.name,
+                        controllingTeamName: activeTeam?.name ?? 'Controlling team',
+                        roundValue,
+                      }
+                    : null
+                }
               />
             )}
           </ConsoleSection>
@@ -531,7 +549,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
                   </div>
                   <div className="button-row">
                     <button className="danger" onClick={confirmStealFailed}>
-                      Steal Failed — {activeTeam?.name ?? 'Controlling team'} +{roundValue}
+                      Steal Failed — {activeTeam?.name ?? 'Controlling team'} +{roundValue}, round ends
                     </button>
                   </div>
                 </>
@@ -599,7 +617,7 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
               ))}
             </div>
 
-            {isBrainBlitzEnabled(state.brainBlitzConfig) && (
+            {isBrainBlitzEnabled(state.brainBlitzConfig) && !state.primaryBrainBlitzPlayed && (
               <div className="button-row">
                 <button
                   className="primary"
@@ -607,6 +625,12 @@ export default function TeacherGameView({ state, dispatch, canUndo }: Props) {
                 >
                   PLAY BRAIN BLITZ
                 </button>
+              </div>
+            )}
+            {isBrainBlitzEnabled(state.brainBlitzConfig) && state.primaryBrainBlitzPlayed && (
+              <div className="console-hint">
+                Brain Blitz already played this game. Use + EXTRA BLITZ below for an exhibition
+                round — it won&rsquo;t change the official winner.
               </div>
             )}
 
