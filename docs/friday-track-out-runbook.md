@@ -15,6 +15,48 @@ students in 4 teams.
 
 ---
 
+## FRIDAY 60-SECOND STARTUP
+
+1. **Close old Class Feud tabs on every team iPad first.** A forgotten tab
+   from a prior session/rehearsal stays connected and can silently occupy a
+   team slot before you even open the app today.
+2. On the Mac:
+   ```bash
+   cd ~/Projects/class-feud
+   ```
+3. Get the current Wi-Fi IP:
+   ```bash
+   ipconfig getifaddr en0
+   ```
+4. Start Class Feud:
+   ```bash
+   npm run dev -- --host
+   ```
+5. Teacher opens:
+   `http://localhost:<port>/?host=teacher`
+6. Team iPads open:
+   `http://<Wi-Fi IP>:<port>/team-button`
+7. Join Team 1–4.
+8. Verify all 4 show **CONNECTED** on the teacher panel.
+9. Check each iPad: silent switch **OFF**, volume **up**.
+10. Run one READY/press sound check (START FACE-OFF, let one team tap).
+11. **RESET BUTTONS.**
+12. Start the class game.
+
+### EMERGENCY FALLBACK
+
+If Team Buttons fail at any point, keep teaching — do not stop class to debug:
+
+- **SET FIRST TEAM** — manually choose who answers.
+- **NEXT TEAM** — the INCORRECT / NO ANSWER buttons during a face-off move to
+  the next recorded team.
+- **MANUAL CONTROL** — the entire game plays without any iPads at all.
+- **RESET BUTTONS** — clears a stuck THINK/READY session.
+- **IGNORE BUTTON RESULT** — discards the current press order without
+  touching any score.
+
+---
+
 ## BEFORE CLASS
 
 1. **Start the host** (teacher computer):
@@ -54,10 +96,12 @@ students in 4 teams.
    **Track 1 — Track Out Edition**, set up **4 teams** (RED, BLUE, GREEN,
    GOLD), and start the game.
 
-4. **Connect up to four iPads.** On each iPad, first turn the **ringer/silent
-   switch OFF and volume up** — iOS mutes Web Audio (the READY ding and press
-   sound) whenever the switch is in silent mode, regardless of in-app volume
-   or code. Then open:
+4. **Connect up to four iPads.** On each iPad, first **close any Class Feud
+   browser tab left open from a prior session or rehearsal** — a tab that's
+   still connected will occupy that team's slot and block a clean join. Then
+   turn the **ringer/silent switch OFF and volume up** — iOS mutes Web Audio
+   (the READY ding and press sound) whenever the switch is in silent mode,
+   regardless of in-app volume or code. Then open:
 
    ```
    http://<host-address>/team-button
@@ -78,12 +122,17 @@ students in 4 teams.
 
 ## FOR EACH CLASS (≈20 minutes)
 
-- **4 teams** of 5–6 students, one iPad per team.
-- **3 boards** (Locker Life → Recess → Track Out Plans).
-- **Brain Blitz** for the winning team (2-player mode supported).
-- **If time allows**, use `+ EXTRA BOARD` (a spare board) or `+ EXTRA BLITZ`
-  (exhibition; does not change the official winner). These are **never**
-  launched automatically.
+- **4 teams (maximum)** of 5–6 students, one iPad per team.
+- **Normal pace:** all **3 boards** (Locker Life → Recess → Track Out Plans),
+  then **Brain Blitz** for the winning team (2-player mode supported).
+
+**Running behind?** Play 2 boards, then use **Skip to Final Score** (on the
+Round Over screen) to go straight to the final score and Brain Blitz. Points
+already earned are kept exactly as they are — nothing is lost or recalculated.
+
+**Running ahead?** After the normal 3 boards + Brain Blitz, use `+ EXTRA
+BOARD` (one of 6 shared spare boards) or `+ EXTRA BLITZ` (exhibition — never
+changes the official winner). Neither is ever launched automatically.
 
 ---
 
@@ -104,12 +153,36 @@ students in 4 teams.
 
 ---
 
+## ANSWER TIMER
+
+A short pacing clock, separate from the THINK countdown above.
+
+- Starts automatically once a team is established as **currently
+  answering** — either the winner of a face-off (before the teacher judges
+  them) or the first eligible team to press during a steal.
+- Defaults to **5 seconds**; switch to **3 seconds** from the Team Buttons
+  panel if you want a faster pace.
+- Teacher controls: **PAUSE**, **RESUME**, **RESET** (restarts at the
+  selected duration for the same team).
+- At zero, the presenter briefly shows a red **X** and a short tone plays.
+
+> **The timer running out is NOT an automatic strike, NOT an automatic "no
+> answer," and it NEVER resolves a steal by itself.** It is a pacing cue
+> only — the teacher still decides CORRECT / INCORRECT / NO ANSWER (or GIVE
+> STEAL / Steal Success / Steal Failed) exactly as always, even after the
+> timer hits zero. If a student is mid-answer when it expires, let them
+> finish and judge the answer normally.
+
+---
+
 ## IF WIFI FAILS
 
 1. The teacher switches to **manual face-off control**.
 2. Use **SET FIRST TEAM** (or NEXT TEAM via the INCORRECT / NO ANSWER buttons)
    to choose who answers, exactly like the no-iPad flow.
-3. Use **RESET BUTTONS** / **IGNORE BUTTON RESULT** to clear any stale state.
+3. Use **RESET BUTTONS** (clears a stuck THINK/READY session so the buttons
+   go back to locked) or **IGNORE BUTTON RESULT** (discards the current press
+   order without touching any score) to clear any stale state.
 4. The game continues normally; scores, strikes, steals, and Brain Blitz are
    unaffected.
 
