@@ -11,6 +11,8 @@ export type TeamButtonClient = {
   connectedTeamIds: string[];
   session: FaceOffPublicState | null;
   error: string | null;
+  /** True when the WebSocket has not opened within the warning window (keeps retrying). */
+  stalled: boolean;
   joinTeam: (teamId: string) => void;
   press: (sessionId: string) => void;
 };
@@ -41,7 +43,7 @@ export function useTeamButtonClient(): TeamButtonClient {
     myTeamIdRef.current = myTeamId;
   }, [myTeamId]);
 
-  const { status, send } = useTeamButtonConnection({
+  const { status, send, stalled } = useTeamButtonConnection({
     role: 'team',
     onOpen: (sendOnOpen) => {
       const teamId = myTeamIdRef.current;
@@ -119,5 +121,5 @@ export function useTeamButtonClient(): TeamButtonClient {
     send({ type: 'press', sessionId });
   };
 
-  return { status, myTeamId, teamConfig, connectedTeamIds, session, error, joinTeam, press };
+  return { status, myTeamId, teamConfig, connectedTeamIds, session, error, stalled, joinTeam, press };
 }

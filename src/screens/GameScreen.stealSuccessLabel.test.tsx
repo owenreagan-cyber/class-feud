@@ -23,6 +23,7 @@ vi.mock('../teamButton/useTeamButtonHost', () => ({
     session: null,
     error: null,
     demoted: false,
+    stalled: false,
     startSession: () => {},
     resolveSession: () => {},
     resetButtons: () => {},

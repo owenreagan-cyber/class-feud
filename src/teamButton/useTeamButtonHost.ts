@@ -9,6 +9,8 @@ export type TeamButtonHost = {
   error: string | null;
   /** True once another device has taken over the host role; this one is no longer authoritative. */
   demoted: boolean;
+  /** True when the WebSocket has not opened within the warning window (keeps retrying). */
+  stalled: boolean;
   startSession: (kind: SessionKind, thinkSeconds: number, eligibleTeamIds: string[]) => void;
   resolveSession: () => void;
   resetButtons: () => void;
@@ -33,7 +35,7 @@ export function useTeamButtonHost(teamInfos: TeamInfo[]): TeamButtonHost {
     teamInfosRef.current = teamInfos;
   }, [teamInfos]);
 
-  const { status, send } = useTeamButtonConnection({
+  const { status, send, stalled } = useTeamButtonConnection({
     role: 'host',
     onOpen: (sendOnOpen) => {
       sendOnOpen({ type: 'setTeams', teams: teamInfosRef.current });
@@ -80,5 +82,5 @@ export function useTeamButtonHost(teamInfos: TeamInfo[]): TeamButtonHost {
   const resolveSession = () => send({ type: 'resolve' });
   const resetButtons = () => send({ type: 'reset' });
 
-  return { status, connectedTeamIds, session, error, demoted, startSession, resolveSession, resetButtons };
+  return { status, connectedTeamIds, session, error, demoted, stalled, startSession, resolveSession, resetButtons };
 }

@@ -12,7 +12,7 @@ import type { TeamInfo } from './protocol';
  */
 export default function TeamButtonClientView() {
   const client = useTeamButtonClient();
-  const { status, myTeamId, teamConfig, connectedTeamIds, session, error } = client;
+  const { status, myTeamId, teamConfig, connectedTeamIds, session, error, stalled } = client;
 
   if (status !== 'open') {
     return (
@@ -20,7 +20,15 @@ export default function TeamButtonClientView() {
         <div className="tb-status-banner" role="status" aria-live="polite">
           {status === 'reconnecting' ? 'RECONNECTING…' : 'CONNECTING…'}
         </div>
-        <p className="tb-hint">Checking the button connection…</p>
+        {stalled ? (
+          <>
+            <h2 className="tb-headline">CAN'T REACH THE GAME HOST</h2>
+            <p className="tb-hint">Check Wi-Fi or ask your teacher.</p>
+            <p className="tb-hint">The game can continue without this Team Button.</p>
+          </>
+        ) : (
+          <p className="tb-hint">Checking the button connection…</p>
+        )}
       </div>
     );
   }

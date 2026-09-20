@@ -1726,6 +1726,58 @@ textarea.field-input {
   width: fit-content;
 }
 
+.tb-join-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tb-join-warning span,
+.tb-join-warning code {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.tb-join-warning code {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  width: fit-content;
+}
+
+.tb-unreachable {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tb-unreachable ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.tb-unreachable span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .tb-connected-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

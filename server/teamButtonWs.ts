@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from 'ws';
-import type { Plugin } from 'vite';
+import type { Plugin, PreviewServer, ViteDevServer } from 'vite';
 import { TeamButtonRoom } from '../src/teamButton/room.ts';
 import { TEAM_BUTTON_WS_PORT } from '../src/teamButton/protocol.ts';
 import {
@@ -7,6 +7,12 @@ import {
   sweepHeartbeat,
 } from './heartbeat.ts';
 import type { HeartbeatClient } from './heartbeat.ts';
+
+/** The HTTP (Vite) port the classroom runbook targets. Must match vite.config.ts. */
+export const TEAM_BUTTON_HTTP_PORT = 5173;
+
+/** Explicit LAN bind for the Team Buttons WebSocket (all IPv4 interfaces). */
+export const TEAM_BUTTON_WS_HOST = '0.0.0.0';
 
 // Accidental host-role takeover guard (NOT authentication): the teacher host
 // supplies this value in the URL query (`?host=teacher`) and the room only
@@ -50,7 +56,16 @@ export function teamButtonWsPlugin(
     // config); the room is tested directly with fake clients instead.
     if (process.env.VITEST === 'true') return;
     if (wss) return;
-    wss = new WebSocketServer({ port: TEAM_BUTTON_WS_PORT });
+    // Bind explicitly to all IPv4 interfaces: classroom iPads reach the Mac
+    // over an IPv4 LAN address, and this avoids depending on the `ws` library's
+    // implicit IPv6 `::` dual-stack default.
+    wss = new WebSocketServer({ host: TEAM_BUTTON_WS_HOST, port: TEAM_BUTTON_WS_PORT });
+
+    wss.on('listening', () => {
+      console.log(
+        `[Team Buttons] WebSocket server listening on ws://${TEAM_BUTTON_WS_HOST}:${TEAM_BUTTON_WS_PORT}`,
+      );
+    });
 
     // Heartbeat: terminate clients that stop answering pings.
     heartbeatInterval = setInterval(() => {
@@ -97,13 +112,24 @@ export function teamButtonWsPlugin(
     // the failure so the teacher knows to use manual mode.
     wss.on('error', (err: Error) => {
       console.error(
-        '[Team Buttons] WebSocket server unavailable (port ' +
+        '[Team Buttons] WebSocket server unavailable on ' +
+          TEAM_BUTTON_WS_HOST +
+          ':' +
           TEAM_BUTTON_WS_PORT +
-          '): ' +
+          ' (' +
           err.message +
-          '. Team Buttons disabled — use manual face-off.',
+          '). Team Buttons disabled — use manual face-off.',
       );
     });
+  }
+
+  function logStartup(httpPort: number): void {
+    // Deliberately do not guess the Wi-Fi IP: the runbook (`ipconfig getifaddr
+    // en0`) remains authoritative for the actual address. `<host>` is a
+    // placeholder for that address.
+    console.log('Class Feud:');
+    console.log(`  HTTP: http://<host>:${httpPort}`);
+    console.log(`  Team Buttons WebSocket: ws://${TEAM_BUTTON_WS_HOST}:${TEAM_BUTTON_WS_PORT}`);
   }
 
   /**
@@ -129,11 +155,19 @@ export function teamButtonWsPlugin(
 
   return {
     name: 'class-feud-team-buttons',
-    configureServer() {
+    configureServer(server?: ViteDevServer) {
       start();
+      // Vitest also loads vite.config.ts and invokes these hooks for its own
+      // server; skip the banner there (start() already no-ops under VITEST).
+      if (server && process.env.VITEST !== 'true') {
+        logStartup(server.config.server.port ?? TEAM_BUTTON_HTTP_PORT);
+      }
     },
-    configurePreviewServer() {
+    configurePreviewServer(server?: PreviewServer) {
       start();
+      if (server && process.env.VITEST !== 'true') {
+        logStartup(server.config.preview.port ?? TEAM_BUTTON_HTTP_PORT);
+      }
     },
     closeServer() {
       stop();

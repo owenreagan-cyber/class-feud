@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer as createNetServer } from 'node:net';
-import { teamButtonWsPlugin } from './teamButtonWs';
+import { WebSocket } from 'ws';
+import { teamButtonWsPlugin, TEAM_BUTTON_WS_HOST } from './teamButtonWs';
 import { TEAM_BUTTON_WS_PORT } from '../src/teamButton/protocol';
 
 function portInUse(port: number): Promise<boolean> {
@@ -10,7 +11,7 @@ function portInUse(port: number): Promise<boolean> {
     probe.once('listening', () => {
       probe.close(() => resolve(false));
     });
-    probe.listen(port, '::');
+    probe.listen(port, '0.0.0.0');
   });
 }
 
@@ -28,8 +29,21 @@ async function waitForPortState(port: number, wantInUse: boolean, timeoutMs = 30
   }
 }
 
+async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (predicate()) return;
+    if (Date.now() > deadline) throw new Error('condition not met within timeout');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
 describe('teamButtonWsPlugin lifecycle', () => {
   const originalVitest = process.env.VITEST;
+
+  beforeEach(() => {
+    delete process.env.VITEST;
+  });
 
   afterEach(() => {
     if (originalVitest === undefined) delete process.env.VITEST;
@@ -38,10 +52,6 @@ describe('teamButtonWsPlugin lifecycle', () => {
   });
 
   it('binds, tears down, and re-binds without leaving a duplicate heartbeat interval', async () => {
-    // This single test intentionally binds a real, test-owned listener, so it
-    // must bypass the "no real socket during vitest" guard.
-    delete process.env.VITEST;
-
     const setIntervalSpy = vi.spyOn(globalThis, 'setInterval');
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
 
@@ -73,5 +83,69 @@ describe('teamButtonWsPlugin lifecycle', () => {
     expect(clearIntervalSpy).toHaveBeenCalledWith(secondTimer);
     // Every created interval was cleared — no duplicate heartbeat survives.
     expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('binds explicitly to 0.0.0.0 and accepts a LAN client', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const plugin = teamButtonWsPlugin({ heartbeatIntervalMs: 60_000 });
+    const start = plugin.configureServer as unknown as () => void;
+    const stop = plugin.closeServer as unknown as () => void;
+
+    start();
+    await waitForPortState(TEAM_BUTTON_WS_PORT, true);
+    await waitFor(() =>
+      logSpy.mock.calls.flat().join(' ').includes(`ws://${TEAM_BUTTON_WS_HOST}:${TEAM_BUTTON_WS_PORT}`),
+    );
+
+    // A client can actually connect over loopback, proving the bind is live.
+    const client = new WebSocket(`ws://127.0.0.1:${TEAM_BUTTON_WS_PORT}`);
+    await new Promise<void>((resolve, reject) => {
+      client.once('open', resolve);
+      client.once('error', reject);
+    });
+    client.close();
+
+    stop();
+    await waitForPortState(TEAM_BUTTON_WS_PORT, false);
+    logSpy.mockRestore();
+  });
+
+  it('logs a clear error and keeps manual fallback when the WS port is taken', async () => {
+    const blocker = createNetServer();
+    await new Promise<void>((resolve) => blocker.listen(TEAM_BUTTON_WS_PORT, '0.0.0.0', resolve));
+
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const plugin = teamButtonWsPlugin({ heartbeatIntervalMs: 60_000 });
+    const start = plugin.configureServer as unknown as () => void;
+    const stop = plugin.closeServer as unknown as () => void;
+
+    expect(() => start()).not.toThrow();
+    await waitFor(() =>
+      errSpy.mock.calls.flat().join(' ').includes('WebSocket server unavailable'),
+    );
+
+    stop();
+    await new Promise<void>((resolve) => blocker.close(() => resolve()));
+    errSpy.mockRestore();
+  });
+
+  it('logs the classroom startup summary', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const plugin = teamButtonWsPlugin({ heartbeatIntervalMs: 60_000 });
+    const configure = plugin.configureServer as unknown as (
+      server: { config: { server: { port?: number } } },
+    ) => void;
+    const stop = plugin.closeServer as unknown as () => void;
+
+    configure({ config: { server: { port: 5173 } } });
+
+    const output = logSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Class Feud:');
+    expect(output).toContain('HTTP: http://<host>:5173');
+    expect(output).toContain(`Team Buttons WebSocket: ws://${TEAM_BUTTON_WS_HOST}:${TEAM_BUTTON_WS_PORT}`);
+
+    stop();
+    await waitForPortState(TEAM_BUTTON_WS_PORT, false);
+    logSpy.mockRestore();
   });
 });

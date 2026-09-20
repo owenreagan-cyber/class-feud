@@ -7,6 +7,7 @@ import type { GamePhase, Team } from '../game/gameTypes';
 import type { AnswerTimerApi } from '../game/useAnswerTimer';
 import AnswerTimerHud from './AnswerTimerHud';
 import JoinQrCode from './JoinQrCode';
+import { buildJoinUrl, isLoopbackHost } from './joinAddress';
 
 export type TeamButtonPanelProps = {
   teams: Team[];
@@ -73,7 +74,11 @@ export default function TeamButtonPanel({
     }
   }, [currentAnsweringTeamId, startAnswerTimer, clearAnswerTimer]);
 
-  const joinUrl = `${window.location.origin}/team-button`;
+  const joinUrl = buildJoinUrl(window.location.origin);
+  // A loopback origin (localhost/127.0.0.1/::1) would encode a QR code iPads
+  // cannot use — they'd resolve it to themselves. Show a warning instead of a
+  // silently-unusable QR; the typed URL fallback stays for reference.
+  const loopback = isLoopbackHost(window.location.hostname);
 
   const startFaceoff = () => {
     unlockAudio();
@@ -129,13 +134,36 @@ export default function TeamButtonPanel({
         </span>
       </div>
 
-      <div className="tb-join-url">
-        <JoinQrCode value={joinUrl} />
-        <div className="tb-join-url-text">
-          <span>Join on each iPad — scan, or type:</span>
-          <code>{joinUrl}</code>
+      {host.stalled && (
+        <div className="tb-unreachable" role="alert">
+          <strong>TEAM BUTTON SERVER NOT REACHABLE</strong>
+          <span>Possible causes:</span>
+          <ul>
+            <li>Device is not on the same reachable network</li>
+            <li>Mac firewall blocked incoming Node connections</li>
+            <li>School Wi-Fi blocks device-to-device traffic</li>
+            <li>WebSocket port unavailable</li>
+          </ul>
+          <span>Manual controls still work.</span>
         </div>
-      </div>
+      )}
+
+      {loopback ? (
+        <div className="tb-join-warning" role="alert">
+          <strong>TEAM BUTTON QR NEEDS YOUR MAC'S WI-FI ADDRESS</strong>
+          <span>Open the teacher page using:</span>
+          <code>http://&lt;Mac-Wi-Fi-IP&gt;:&lt;port&gt;/?host=teacher</code>
+          <span>Then the QR code will use the correct address.</span>
+        </div>
+      ) : (
+        <div className="tb-join-url">
+          <JoinQrCode value={joinUrl} />
+          <div className="tb-join-url-text">
+            <span>Join on each iPad — scan, or type:</span>
+            <code>{joinUrl}</code>
+          </div>
+        </div>
+      )}
 
       <div className="tb-connected-list">
         {teams.map((team) => (

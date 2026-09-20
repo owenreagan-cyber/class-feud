@@ -10,7 +10,16 @@ export type TeamButtonConnection = {
   status: ConnectionStatus;
   send: SendFn;
   lastMessage: ServerMessage | null;
+  /** True once the socket has not opened within the warning window; retries continue. */
+  stalled: boolean;
 };
+
+/**
+ * How long a socket may stay unopened (connecting/reconnecting) before the
+ * caller should surface the "server not reachable" warning. Reconnect attempts
+ * keep running regardless; opening the socket clears the flag.
+ */
+export const CONNECTION_WARNING_DELAY_MS = 8000;
 
 function wsUrl(): string {
   const params = new URLSearchParams(window.location.search);
@@ -34,6 +43,7 @@ export function useTeamButtonConnection(options: {
 }): TeamButtonConnection {
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [lastMessage, setLastMessage] = useState<ServerMessage | null>(null);
+  const [stalled, setStalled] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   const onOpenRef = useRef(options.onOpen);
@@ -49,7 +59,29 @@ export function useTeamButtonConnection(options: {
   useEffect(() => {
     let disposed = false;
     let retry: ReturnType<typeof setTimeout> | null = null;
+    let warningTimer: ReturnType<typeof setTimeout> | null = null;
+    let warningArmed = false;
     let attempts = 0;
+
+    const clearWarningTimer = () => {
+      if (warningTimer) {
+        clearTimeout(warningTimer);
+        warningTimer = null;
+      }
+    };
+
+    // Arm a single stall warning per unopened episode (not per retry), so the
+    // timer is not constantly reset by the reconnect backoff loop.
+    const armWarning = () => {
+      if (warningArmed) return;
+      warningArmed = true;
+      clearWarningTimer();
+      warningTimer = setTimeout(() => {
+        if (!disposed && socketRef.current?.readyState !== WebSocket.OPEN) {
+          setStalled(true);
+        }
+      }, CONNECTION_WARNING_DELAY_MS);
+    };
 
     const send = (message: ClientMessage) => {
       const socket = socketRef.current;
@@ -61,6 +93,7 @@ export function useTeamButtonConnection(options: {
     const connect = () => {
       if (disposed) return;
       setStatus((previous) => (previous === 'open' ? 'reconnecting' : 'connecting'));
+      armWarning();
       const socket = new WebSocket(wsUrl());
       socketRef.current = socket;
 
@@ -70,6 +103,9 @@ export function useTeamButtonConnection(options: {
           return;
         }
         attempts = 0;
+        warningArmed = false;
+        clearWarningTimer();
+        setStalled(false);
         setStatus('open');
         // The teacher host sends an optional `host` query value as an
         // accidental host-role takeover guard (NOT authentication). Team
@@ -115,6 +151,7 @@ export function useTeamButtonConnection(options: {
     return () => {
       disposed = true;
       if (retry) clearTimeout(retry);
+      clearWarningTimer();
       const socket = socketRef.current;
       if (socket) {
         socket.onopen = null;
@@ -135,5 +172,5 @@ export function useTeamButtonConnection(options: {
     }
   }, []);
 
-  return { status, send, lastMessage };
+  return { status, send, lastMessage, stalled };
 }

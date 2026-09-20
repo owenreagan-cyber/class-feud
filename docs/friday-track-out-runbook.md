@@ -33,15 +33,26 @@ students in 4 teams.
    npm run dev -- --host
    ```
 5. Teacher opens:
-   `http://localhost:<port>/?host=teacher`
-6. Team iPads open:
-   `http://<Wi-Fi IP>:<port>/team-button`
+   `http://<Wi-Fi-IP>:5173/?host=teacher`
+6. Team iPads scan the QR code on the teacher panel, or open:
+   `http://<Wi-Fi-IP>:5173/team-button`
 7. Join Team 1–4.
 8. Verify all 4 show **CONNECTED** on the teacher panel.
 9. Check each iPad: silent switch **OFF**, volume **up**.
 10. Run one READY/press sound check (START FACE-OFF, let one team tap).
 11. **RESET BUTTONS.**
 12. Start the class game.
+
+### IF AN IPAD CAN'T CONNECT
+
+- **If the page won't load at all** (`http://<Wi-Fi-IP>:5173/team-button`): a
+  LAN / firewall / client-isolation issue. The iPad cannot reach the Mac.
+- **If the page loads but Team Buttons stays CONNECTING…**: HTTP works but the
+  **WebSocket** connection (port `5174`) is failing — usually the Mac firewall
+  blocking Node, or the school network blocking device-to-device traffic.
+- **If the school Wi-Fi isolates devices** (iPads can't reach each other or the
+  Mac): switch to **manual controls** or an approved non-isolated network.
+  **App code cannot bypass WLAN client isolation.**
 
 ### EMERGENCY FALLBACK
 
@@ -87,7 +98,7 @@ If Team Buttons fail at any point, keep teaching — do not stop class to debug:
 3. **Open the teacher view** in a browser at:
 
    ```
-   http://<host-address>/?host=teacher
+   http://<host-address>:5173/?host=teacher
    ```
 
    The `?host=teacher` value is an **accidental host-role takeover guard**,
@@ -101,10 +112,11 @@ If Team Buttons fail at any point, keep teaching — do not stop class to debug:
    still connected will occupy that team's slot and block a clean join. Then
    turn the **ringer/silent switch OFF and volume up** — iOS mutes Web Audio
    (the READY ding and press sound) whenever the switch is in silent mode,
-   regardless of in-app volume or code. Then open:
+   regardless of in-app volume or code. Then scan the QR code on the teacher
+   panel, or open:
 
    ```
-   http://<host-address>/team-button
+   http://<host-address>:5173/team-button
    ```
 
    Then tap the team name to join. No login, no names, no roster. Student
@@ -201,16 +213,18 @@ game state are never affected. Just press START FACE-OFF / START STEAL again.
 ## TROUBLESHOOTING
 
 - **Wrong port / page won't load:** get the IP from `ipconfig getifaddr en0`
-  (step 2 above), not from Vite's printed `Network:` lines. For the *port*,
-  check the terminal: if `5173` is already in use, Vite picks the next free
-  port (e.g. `5175`) and prints it. Use whatever port is printed; do not
-  assume `5173`.
-- **Team Buttons stuck on RECONNECTING / CONNECTING:** the Team Buttons
-  WebSocket server (port `5174`) could not start — usually because another
-  program is using that port, or the iPad network cannot reach the host. The
-  server console prints a `[Team Buttons] WebSocket server unavailable` line.
-  Switch to **manual face-off control** (SET FIRST TEAM) and keep playing;
-  Team Buttons are optional.
+  (step 2 above), not from Vite's printed `Network:` lines. The HTTP port is
+  **pinned to `5173`** — if it is already in use, Vite fails to start with a
+  clear error instead of silently choosing another port. Free up port `5173`
+  and restart.
+- **Team Buttons stuck on RECONNECTING / CONNECTING / "NOT REACHABLE":** the
+  page loaded (HTTP works) but the Team Buttons **WebSocket** server (port
+  `5174`) is not reachable — usually because the Mac firewall blocked Node, or
+  the school network blocks device-to-device traffic. The server console prints
+  a `[Team Buttons] WebSocket server unavailable` line if the port itself is
+  taken. Switch to **manual face-off control** (SET FIRST TEAM) and keep
+  playing; Team Buttons are optional.
 - **iPads can't reach the host at all:** the school Wi-Fi is likely isolating
   peers (client isolation). Use manual face-off mode; do not change the setup
-  during class.
+  during class. **App code cannot bypass WLAN client isolation** — a
+  non-isolated network (or IT approval) is required.

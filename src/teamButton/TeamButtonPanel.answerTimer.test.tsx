@@ -23,6 +23,14 @@ vi.mock('./useTeamButtonHost', () => ({
   useTeamButtonHost: vi.fn(),
 }));
 
+// jsdom's location.hostname is "localhost", which the QR guard treats as
+// loopback. These tests don't exercise the QR guard, so pin it to a reachable
+// LAN host to keep the join-URL/QR assertions stable.
+vi.mock('./joinAddress', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./joinAddress')>();
+  return { ...actual, isLoopbackHost: vi.fn(() => false) };
+});
+
 function press(teamId: string, at = 0): PressEntry {
   return { teamId, at };
 }
@@ -46,6 +54,7 @@ function makeHost(overrides: Partial<TeamButtonHost> = {}): TeamButtonHost {
     session: null,
     error: null,
     demoted: false,
+    stalled: false,
     startSession: vi.fn(),
     resolveSession: vi.fn(),
     resetButtons: vi.fn(),
