@@ -93,3 +93,14 @@ export function playWrongAnswerSound(): void {
   tone(196, 0.16);
   tone(130, 0.22, 0.14);
 }
+
+/**
+ * Short, bright, ascending major-arpeggio cue for an accepted answer reveal.
+ * Original/generated tones (C5 → E5 → G5), no sampled/copyrighted audio.
+ * Distinct from the wrong-answer descent so reveal reads clearly positive.
+ */
+export function playRevealDing(): void {
+  tone(523.25, 0.1); // C5
+  tone(659.25, 0.1, 0.09); // E5
+  tone(783.99, 0.16, 0.18); // G5
+}

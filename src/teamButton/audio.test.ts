@@ -143,3 +143,19 @@ describe('playReadyDing / playFirstPress', () => {
     expect(() => playReadyDing()).not.toThrow();
   });
 });
+
+describe('playRevealDing', () => {
+  it('plays a short three-tone cue through the existing context', async () => {
+    const { unlockAudio, playRevealDing } = await freshAudioModule();
+    unlockAudio();
+    playRevealDing();
+    expect(FakeAudioContext.instances).toHaveLength(1);
+    expect(FakeAudioContext.instances[0].createOscillator).toHaveBeenCalledTimes(3);
+  });
+
+  it('is a silent no-op when no context exists yet', async () => {
+    const { playRevealDing } = await freshAudioModule();
+    expect(() => playRevealDing()).not.toThrow();
+    expect(FakeAudioContext.instances).toHaveLength(0);
+  });
+});

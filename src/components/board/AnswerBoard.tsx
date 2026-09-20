@@ -1,13 +1,18 @@
 import { motion } from 'framer-motion';
 import type { FeudAnswer } from '../../game/gameTypes';
+import { usePrefersReducedMotion } from '../../game/usePrefersReducedMotion';
 
 function AnswerCard({ answer, index }: { answer: FeudAnswer; index: number }) {
+  const reduceMotion = usePrefersReducedMotion();
   return (
     <div className="answer-card-scene">
       <motion.div
         className="answer-card-inner"
         animate={{ rotateY: answer.revealed ? 180 : 0 }}
-        transition={{ duration: 0.4, ease: 'easeInOut' }}
+        transition={{
+          duration: reduceMotion ? 0 : 0.4,
+          ease: 'easeInOut',
+        }}
       >
         <div className="answer-face answer-face--front">
           <span className="answer-slot-number">{index + 1}</span>

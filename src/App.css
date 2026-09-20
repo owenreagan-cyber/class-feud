@@ -544,7 +544,7 @@
 
 .answer-card-scene {
   perspective: 900px;
-  height: 150px;
+  height: clamp(140px, 22vh, 210px);
 }
 
 .answer-card-inner {
@@ -565,6 +565,7 @@
   border-radius: 14px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  overflow: hidden;
 }
 
 .answer-face--front {
@@ -580,19 +581,23 @@
 }
 
 .answer-slot-number {
-  font-size: 52px;
+  font-size: clamp(40px, 6vh, 64px);
   font-weight: 900;
 }
 
 .answer-text {
-  font-size: 26px;
+  font-size: clamp(17px, 2.4vh, 26px);
   font-weight: 800;
   text-align: center;
   padding: 0 8px;
+  line-height: 1.12;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .answer-points {
-  font-size: 22px;
+  font-size: clamp(18px, 2.2vh, 24px);
   font-weight: 700;
 }
 

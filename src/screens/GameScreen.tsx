@@ -3,8 +3,10 @@ import type { Dispatch } from 'react';
 import PresenterGameView from '../components/presenter/PresenterGameView';
 import TeacherGameView from '../components/teacher/TeacherGameView';
 import type { GameAction, GameState } from '../game/gameTypes';
+import { getRevealedCount } from '../game/gameSelectors';
 import { useAnswerTimer } from '../game/useAnswerTimer';
 import { useBrainBlitzTimer } from '../game/useBrainBlitzTimer';
+import { useRevealSound } from '../game/useRevealSound';
 import { useWrongAnswerFeedback } from '../game/useWrongAnswerFeedback';
 
 type Props = {
@@ -18,6 +20,9 @@ export default function GameScreen({ state, dispatch, canUndo, onExitToLibrary }
   useBrainBlitzTimer(state.brainBlitz?.timerRunning ?? false, dispatch);
   const { wrongAnswerEvent, showWrongAnswerFeedback } = useWrongAnswerFeedback();
   const answerTimer = useAnswerTimer(() => showWrongAnswerFeedback(false));
+
+  // Presentation-only reveal chime: once per newly revealed answer.
+  useRevealSound(getRevealedCount(state));
 
   // The answer timer only ever makes sense while a face-off or steal session
   // could be establishing who's answering. Any other phase (playing,
