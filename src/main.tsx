@@ -3,11 +3,21 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import TeamButtonClientView from './teamButton/TeamButtonClientView'
+import PresenterScreen from './presenter/PresenterScreen'
 
-const isTeamButtonRoute = window.location.pathname.replace(/\/+$/, '') === '/team-button'
+const path = window.location.pathname.replace(/\/+$/, '')
+const isTeamButtonRoute = path === '/team-button'
+const isPresenterRoute = path === '/presenter'
+
+let view: React.ReactNode = <App />
+if (isTeamButtonRoute) {
+  view = <TeamButtonClientView />
+} else if (isPresenterRoute) {
+  view = <PresenterScreen />
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isTeamButtonRoute ? <TeamButtonClientView /> : <App />}
+    {view}
   </StrictMode>,
 )

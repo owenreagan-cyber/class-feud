@@ -14,7 +14,7 @@ function AnswerCard({ answer, index }: { answer: FeudAnswer; index: number }) {
           ease: 'easeInOut',
         }}
       >
-        <div className="answer-face answer-face--front">
+        <div className="answer-face answer-face--front" aria-hidden={answer.revealed}>
           <span className="answer-slot-number">{index + 1}</span>
         </div>
         <div

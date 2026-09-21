@@ -200,6 +200,81 @@
   min-height: 100svh;
 }
 
+.presenter-open {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: #1a1500;
+  border: none;
+  border-radius: 8px;
+}
+
+/* ---------- Dedicated presenter route (projector surface) ---------- */
+
+.presenter-route {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1c2b52 0%, rgba(27, 43, 82, 0) 60%),
+    var(--bg);
+  color: var(--text);
+}
+
+.presenter-route .presenter {
+  flex: 1 1 auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 26px 32px;
+}
+
+.presenter-toolbar {
+  position: fixed;
+  top: 12px;
+  right: 14px;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+}
+
+.presenter-toolbar:hover,
+.presenter-toolbar:focus-within {
+  opacity: 1;
+}
+
+.presenter-fullscreen {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 14px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.presenter-waiting {
+  flex: 1 1 auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.presenter-waiting .brand {
+  font-size: clamp(44px, 8vw, 96px);
+}
+
 /* ---------- Presenter (game-show surface) ---------- */
 
 .presenter {
